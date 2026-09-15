@@ -34,4 +34,7 @@ Esta separación permite que las pruebas trabajen sobre una base de datos indepe
 
 En lugar de utilizar un script independiente para automatizar este proceso, se decidió usar un `Makefile`. La elección se hizo con el objetivo de aprender cómo funciona esta herramienta y centralizar en un mismo lugar los comandos necesarios para compilar el proyecto, preparar el entorno de prueba y ejecutar los tests.
 
+## **Reflexion**
+
+A lo largo del proyecto nos pusimos a discutir bastante sobre si convenía casarse con un ORM o ir por SQL directo. Nos dimos cuenta de que, si bien las herramientas de abstracción te resuelven rapidísimo las cosas simples, en cuanto querés hacer consultas un poco más rebuscadas te terminan complicando la vida o escondiendo lo que pasa de fondo. Llegamos a la conclusión de que lo ideal es un equilibrio: usar abstracciones para no reinventar la rueda en lo básico, pero apoyarse en SQL puro —con herramientas como sqlc— cuando necesitás control total y claridad. Además, teniendo en cuenta que hoy en día con la asistencia de IA es mucho más rápido escribir y revisar consultas nativas, encararlo de esta manera nos vino perfecto para entender de verdad cómo dialogan Go y PostgreSQL, que al final era el gran objetivo que teníamos para aprender con este trabajo.
 &nbsp;
