@@ -16,8 +16,8 @@ type Cancha struct {
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
 	DuracionTurnoMinutos int16     `json:"duracion_turno_minutos"`
-	HoraApertura         time.Time `json:"hora_apertura"`
-	HoraCierre           time.Time `json:"hora_cierre"`
+	HoraApertura         string    `json:"hora_apertura"`
+	HoraCierre           string    `json:"hora_cierre"`
 	IDInstitucion        int32     `json:"id_institucion"`
 	IDDeporte            int32     `json:"id_deporte"`
 }

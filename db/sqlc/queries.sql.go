@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const createCancha = `-- name: CreateCancha :one
@@ -17,13 +16,13 @@ RETURNING id_cancha, nombre, precio, activa, created_at, updated_at, duracion_tu
 `
 
 type CreateCanchaParams struct {
-	Nombre               string    `json:"nombre"`
-	Precio               string    `json:"precio"`
-	DuracionTurnoMinutos int16     `json:"duracion_turno_minutos"`
-	HoraApertura         time.Time `json:"hora_apertura"`
-	HoraCierre           time.Time `json:"hora_cierre"`
-	IDInstitucion        int32     `json:"id_institucion"`
-	IDDeporte            int32     `json:"id_deporte"`
+	Nombre               string `json:"nombre"`
+	Precio               string `json:"precio"`
+	DuracionTurnoMinutos int16  `json:"duracion_turno_minutos"`
+	HoraApertura         string `json:"hora_apertura"`
+	HoraCierre           string `json:"hora_cierre"`
+	IDInstitucion        int32  `json:"id_institucion"`
+	IDDeporte            int32  `json:"id_deporte"`
 }
 
 func (q *Queries) CreateCancha(ctx context.Context, arg CreateCanchaParams) (Cancha, error) {
@@ -143,15 +142,15 @@ WHERE id_cancha = $1
 `
 
 type GetCanchaRow struct {
-	IDCancha             int32     `json:"id_cancha"`
-	Nombre               string    `json:"nombre"`
-	Precio               string    `json:"precio"`
-	Activa               bool      `json:"activa"`
-	DuracionTurnoMinutos int16     `json:"duracion_turno_minutos"`
-	HoraApertura         time.Time `json:"hora_apertura"`
-	HoraCierre           time.Time `json:"hora_cierre"`
-	IDInstitucion        int32     `json:"id_institucion"`
-	IDDeporte            int32     `json:"id_deporte"`
+	IDCancha             int32  `json:"id_cancha"`
+	Nombre               string `json:"nombre"`
+	Precio               string `json:"precio"`
+	Activa               bool   `json:"activa"`
+	DuracionTurnoMinutos int16  `json:"duracion_turno_minutos"`
+	HoraApertura         string `json:"hora_apertura"`
+	HoraCierre           string `json:"hora_cierre"`
+	IDInstitucion        int32  `json:"id_institucion"`
+	IDDeporte            int32  `json:"id_deporte"`
 }
 
 func (q *Queries) GetCancha(ctx context.Context, idCancha int32) (GetCanchaRow, error) {
@@ -177,15 +176,15 @@ FROM cancha
 `
 
 type ListCanchasRow struct {
-	IDCancha             int32     `json:"id_cancha"`
-	Nombre               string    `json:"nombre"`
-	Precio               string    `json:"precio"`
-	Activa               bool      `json:"activa"`
-	DuracionTurnoMinutos int16     `json:"duracion_turno_minutos"`
-	HoraApertura         time.Time `json:"hora_apertura"`
-	HoraCierre           time.Time `json:"hora_cierre"`
-	IDInstitucion        int32     `json:"id_institucion"`
-	IDDeporte            int32     `json:"id_deporte"`
+	IDCancha             int32  `json:"id_cancha"`
+	Nombre               string `json:"nombre"`
+	Precio               string `json:"precio"`
+	Activa               bool   `json:"activa"`
+	DuracionTurnoMinutos int16  `json:"duracion_turno_minutos"`
+	HoraApertura         string `json:"hora_apertura"`
+	HoraCierre           string `json:"hora_cierre"`
+	IDInstitucion        int32  `json:"id_institucion"`
+	IDDeporte            int32  `json:"id_deporte"`
 }
 
 func (q *Queries) ListCanchas(ctx context.Context) ([]ListCanchasRow, error) {
@@ -228,15 +227,15 @@ WHERE activa = TRUE
 `
 
 type ListCanchasActivasRow struct {
-	IDCancha             int32     `json:"id_cancha"`
-	Nombre               string    `json:"nombre"`
-	Precio               string    `json:"precio"`
-	Activa               bool      `json:"activa"`
-	DuracionTurnoMinutos int16     `json:"duracion_turno_minutos"`
-	HoraApertura         time.Time `json:"hora_apertura"`
-	HoraCierre           time.Time `json:"hora_cierre"`
-	IDInstitucion        int32     `json:"id_institucion"`
-	IDDeporte            int32     `json:"id_deporte"`
+	IDCancha             int32  `json:"id_cancha"`
+	Nombre               string `json:"nombre"`
+	Precio               string `json:"precio"`
+	Activa               bool   `json:"activa"`
+	DuracionTurnoMinutos int16  `json:"duracion_turno_minutos"`
+	HoraApertura         string `json:"hora_apertura"`
+	HoraCierre           string `json:"hora_cierre"`
+	IDInstitucion        int32  `json:"id_institucion"`
+	IDDeporte            int32  `json:"id_deporte"`
 }
 
 func (q *Queries) ListCanchasActivas(ctx context.Context) ([]ListCanchasActivasRow, error) {

@@ -10,7 +10,8 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U prueba -d CanchAppprueba
+        # El servidor temporal de inicialización solo acepta conexiones por socket.
+        - pg_isready -h 127.0.0.1 -U prueba -d CanchAppprueba
       interval: 2s
       timeout: 5s
       retries: 10
