@@ -12,9 +12,9 @@ cd Mi-primera-aplicacion-web.git
 
 Una vez dentro, se pueden compilar los archivos y ejecutar los tests con el siguiente comando:
 
-make build && make test
+make test
 
-Para poder realizar este proceso es necesario tener instalados Go, Docker y Docker Compose
+Para poder realizar este proceso es necesario tener instalados Go, Docker, Docker Compose, HURL, sqlc
 
 ## **Desarrollo**
 
@@ -33,3 +33,7 @@ Para ejecutar los tests se eligió levantar una instancia de PostgreSQL en un co
 Esta separación permite que las pruebas trabajen sobre una base de datos independiente, sin modificar ni eliminar los datos guardados durante el uso habitual de la aplicación. La base utilizada por los tests puede crearse desde cero y eliminarse al finalizar cada ejecución.
 
 En lugar de utilizar un script independiente para automatizar este proceso, se decidió usar un `Makefile`. La elección se hizo con el objetivo de aprender cómo funciona esta herramienta y centralizar en un mismo lugar los comandos necesarios para compilar el proyecto, preparar el entorno de prueba y ejecutar los tests.
+
+
+Se expuso la logica de negocio mediante una API REST para la entidad deporte y se utilizo HURL para probar los endpoints
+
