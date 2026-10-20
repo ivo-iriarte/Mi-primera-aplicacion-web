@@ -1,0 +1,6 @@
+bin/
+.env
+*.log
+.dockerignore
+/tmp
+canchapp
