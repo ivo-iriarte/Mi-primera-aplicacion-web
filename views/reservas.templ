@@ -1,0 +1,88 @@
+package views
+
+import (
+	sqlc "canchapp/db/sqlc"
+	"fmt"
+)
+
+templ ReservasPage(reservas []sqlc.Reserva, canchas []sqlc.ListCanchasRow, usuarios []sqlc.Usuario, idCanchaPreseleccionada int32) {
+	@Layout("Mis Reservas") {
+		<div class="card">
+			<h2>Reservar Turno</h2>
+			<form action="/app/reservas/crear" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+				<div>
+					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Usuario:</label>
+					<select name="id_usuario" required style="width: 100%;">
+						for _, u := range usuarios {
+							<option value={ fmt.Sprintf("%d", u.IDUsuario) }>{ u.Nombre } { u.Apellido } ({ u.Email })</option>
+						}
+					</select>
+				</div>
+				<div>
+					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Cancha:</label>
+					<select name="id_cancha" required style="width: 100%;">
+						for _, c := range canchas {
+							<option value={ fmt.Sprintf("%d", c.IDCancha) } selected?={ c.IDCancha == idCanchaPreseleccionada }>
+								{ c.Nombre } (${ c.Precio })
+							</option>
+						}
+					</select>
+				</div>
+				<div>
+					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Inicio:</label>
+					<input type="datetime-local" name="fecha_inicio" required style="width: 100%;"/>
+				</div>
+				<div>
+					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Fin:</label>
+					<input type="datetime-local" name="fecha_fin" required style="width: 100%;"/>
+				</div>
+				<div style="grid-column: 1 / -1;">
+					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Observaciones:</label>
+					<input type="text" name="observaciones" placeholder="Opcional: Requerimientos extra" style="width: 100%;"/>
+				</div>
+				<div style="grid-column: 1 / -1; margin-top: 0.5rem;">
+					<button type="submit" style="width: 100%;">Confirmar Reserva</button>
+				</div>
+			</form>
+		</div>
+
+		<div class="card">
+			<h2>Turnos Reservados</h2>
+			if len(reservas) == 0 {
+				<p style="margin-top: 1rem; color: #64748b;">No hay reservas registradas en el sistema.</p>
+			} else {
+				<table>
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Cancha</th>
+							<th>Usuario</th>
+							<th>Fecha y Hora</th>
+							<th>Total</th>
+							<th>Acción</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, r := range reservas {
+							<tr>
+								<td>#{ fmt.Sprintf("%d", r.IDReserva) }</td>
+								<td>Cancha #{ fmt.Sprintf("%d", r.IDCancha) }</td>
+								<td>User #{ fmt.Sprintf("%d", r.IDUsuario) }</td>
+								<td>{ r.FechaInicio.Format("02/01/2006 15:04") }</td>
+								<td>${ r.PrecioTotal }</td>
+								<td>
+									<form action="/app/reservas/cancelar" method="POST" style="margin:0;">
+										<input type="hidden" name="id_reserva" value={ fmt.Sprintf("%d", r.IDReserva) }/>
+										<button type="submit" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+											Cancelar
+										</button>
+									</form>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			}
+		</div>
+	}
+}
