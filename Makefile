@@ -19,9 +19,10 @@ check-no-js:
 # Tareas previas: sqlc + templ generate
 generate:
 	@echo "Generando código de sqlc y templ..."
-	@go mod tidy
 	@go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION) generate
 	@go run github.com/a-h/templ/cmd/templ@$(TEMPL_VERSION) generate
+	@go get github.com/a-h/templ@$(TEMPL_VERSION)
+	@go mod tidy
 
 # Compilación
 build: check-no-js generate
