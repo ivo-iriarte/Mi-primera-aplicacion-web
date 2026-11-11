@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"context"
+	"database/sql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -91,13 +91,12 @@ func (vh *ViewsHandler) Reservas(w http.ResponseWriter, r *http.Request) {
 	usuarios, _ := vh.queries.ListUsuarios(ctx)
 
 	if len(usuarios) == 0 {
-		telefonoDemo := "2494112233"
 		u, err := vh.queries.CreateUsuario(ctx, sqlc.CreateUsuarioParams{
 			Nombre:       "Usuario",
 			Apellido:     "Demo",
 			Email:        "demo@canchapp.com",
 			PasswordHash: "secret_hash",
-			Telefono:     &telefonoDemo,
+			Telefono:     sql.NullString{String: "2494112233", Valid: true},
 		})
 		if err == nil {
 			usuarios = append(usuarios, u)
@@ -118,7 +117,7 @@ func (vh *ViewsHandler) CrearReserva(w http.ResponseWriter, r *http.Request) {
 	idCancha, _ := strconv.Atoi(r.FormValue("id_cancha"))
 	inicioStr := r.FormValue("fecha_inicio")
 	finStr := r.FormValue("fecha_fin")
-	observaciones := r.FormValue("observaciones")
+	observaciones := strings.TrimSpace(r.FormValue("observaciones"))
 
 	layout := "2006-01-02T15:04"
 	fechaInicio, err1 := time.Parse(layout, inicioStr)
@@ -146,9 +145,9 @@ func (vh *ViewsHandler) CrearReserva(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var obsPtr *string
-	if observaciones != "" {
-		obsPtr = &observaciones
+	obsNull := sql.NullString{
+		String: observaciones,
+		Valid:  observaciones != "",
 	}
 
 	_, err = vh.queries.CreateReserva(ctx, sqlc.CreateReservaParams{
@@ -158,7 +157,7 @@ func (vh *ViewsHandler) CrearReserva(w http.ResponseWriter, r *http.Request) {
 		FechaFin:      fechaFin,
 		IDEstado:      estadoID,
 		PrecioTotal:   cancha.Precio,
-		Observaciones: obsPtr,
+		Observaciones: obsNull,
 	})
 
 	if err != nil {
@@ -176,7 +175,7 @@ func (vh *ViewsHandler) CancelarReserva(w http.ResponseWriter, r *http.Request) 
 	}
 	idReserva, err := strconv.Atoi(r.FormValue("id_reserva"))
 	if err == nil {
-		_ = vh.queries.DeleteReserva(r.Context(), int32(idReserva))
+		_, _ = vh.queries.DeleteReserva(r.Context(), int32(idReserva))
 	}
 	http.Redirect(w, r, "/app/reservas", http.StatusSeeOther)
 }
