@@ -21,6 +21,7 @@ generate:
 	@echo "Generando código de sqlc y templ..."
 	@go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION) generate
 	@go run github.com/a-h/templ/cmd/templ@$(TEMPL_VERSION) generate
+	@go mod tidy
 
 # Compilación
 build: check-no-js generate
