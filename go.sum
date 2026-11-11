@@ -21,3 +21,5 @@ golang.org/x/text v0.29.0 h1:1neNs90w9YzJ9BocxfsQNHKuAT4pkghyXc4nhZ6sJvk=
 golang.org/x/text v0.29.0/go.mod h1:7MhJOA9CD2qZyOKYazxdYMF85OwPdEr9jTtBpO7ydH4=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+github.com/a-h/templ v0.3.833 h1:g24B8x3m429w7bY9rW1Y/Q0Zl1T0o6Yk4G3eUe1z4/c=
+github.com/a-h/templ v0.3.833/go.mod h1:sB2y9J2k0N2XhL5N7P9W1Y/Q0Zl1T0o6Yk4G3eUe1z4=
