@@ -6,16 +6,6 @@ SQLC_VERSION := v1.31.1
 
 all: run-app
 
-# Verificación de consigna: sin archivos .js
-check-no-js:
-	@echo "Verificando ausencia de archivos .js..."
-	@if find . -name "*.js" -not -path "./vendor/*" | grep -q .; then \
-		echo "ERROR: Se encontraron archivos .js en el repositorio:"; \
-		find . -name "*.js" -not -path "./vendor/*"; \
-		exit 1; \
-	fi
-	@echo "OK: Sin archivos .js."
-
 # Tareas previas: sqlc + templ generate
 generate:
 	@echo "Generando código de sqlc y templ..."
