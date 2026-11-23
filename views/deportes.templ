@@ -1,0 +1,46 @@
+package views
+
+import (
+	sqlc "canchapp/db/sqlc"
+	"fmt"
+)
+
+templ DeportesPage(deportes []sqlc.Deporte) {
+	@Layout("Deportes Disponibles") {
+		<div class="card">
+			<h2>Deportes Disponibles</h2>
+			<p>Seleccioná un deporte para ver las canchas asociadas.</p>
+			if len(deportes) == 0 {
+				<p style="margin-top: 1rem; color: #64748b;">No hay deportes disponibles.</p>
+			} else {
+				<div class="grid">
+					for _, d := range deportes {
+						<div class="card" style="margin-bottom: 0;">
+							<h3>{ d.Nombre }</h3>
+							<span class="badge" style="margin: 0.5rem 0;">
+								if d.Activo {
+									Activo
+								} else {
+									Inactivo
+								}
+							</span>
+							<div>
+								<a class="btn-link" href={ templ.SafeURL(fmt.Sprintf("/app/deportes/%d/canchas", d.IDDeporte)) }>
+									Ver Canchas →
+								</a>
+							</div>
+						</div>
+					}
+				</div>
+			}
+		</div>
+
+		<div class="card">
+			<h3>Registrar Nuevo Deporte</h3>
+			<form action="/app/deportes/crear" method="POST">
+				<input type="text" name="nombre" placeholder="Nombre (ej. Basquet)" required/>
+				<button type="submit">Guardar</button>
+			</form>
+		</div>
+	}
+}

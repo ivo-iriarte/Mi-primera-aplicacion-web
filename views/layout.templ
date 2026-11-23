@@ -1,0 +1,138 @@
+package views
+
+templ Layout(title string) {
+	<!DOCTYPE html>
+	<html lang="es">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } - CanchApp</title>
+			<style>
+				:root {
+					--primary: #2563eb;
+					--primary-dark: #1d4ed8;
+					--bg: #f8fafc;
+					--surface: #ffffff;
+					--text: #1e293b;
+					--border: #e2e8f0;
+					--radius: 8px;
+				}
+				* { box-sizing: border-box; margin: 0; padding: 0; }
+				body {
+					font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+					background-color: var(--bg);
+					color: var(--text);
+					line-height: 1.5;
+				}
+				header {
+					background-color: var(--surface);
+					border-bottom: 1px solid var(--border);
+					padding: 1rem 2rem;
+					display: flex;
+					justify-content: space-between;
+					align-items: center;
+				}
+				header h1 a {
+					color: var(--primary);
+					text-decoration: none;
+					font-size: 1.5rem;
+					font-weight: 700;
+				}
+				nav a {
+					margin-left: 1rem;
+					color: var(--text);
+					text-decoration: none;
+					font-weight: 500;
+				}
+				nav a:hover { color: var(--primary); }
+				main {
+					max-width: 900px;
+					margin: 2rem auto;
+					padding: 0 1rem;
+				}
+				.card {
+					background: var(--surface);
+					border: 1px solid var(--border);
+					border-radius: var(--radius);
+					padding: 1.5rem;
+					margin-bottom: 1.5rem;
+					box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+				}
+				.grid {
+					display: grid;
+					grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+					gap: 1rem;
+					margin-top: 1rem;
+				}
+				.badge {
+					display: inline-block;
+					padding: 0.25rem 0.5rem;
+					border-radius: 9999px;
+					font-size: 0.75rem;
+					font-weight: 600;
+					background-color: #dbeafe;
+					color: #1e40af;
+				}
+				table {
+					width: 100%;
+					border-collapse: collapse;
+					margin-top: 1rem;
+				}
+				th, td {
+					padding: 0.75rem 1rem;
+					border-bottom: 1px solid var(--border);
+					text-align: left;
+				}
+				th { background-color: #f1f5f9; font-weight: 600; }
+				form {
+					display: flex;
+					gap: 0.5rem;
+					margin-top: 1rem;
+					flex-wrap: wrap;
+				}
+				input[type="text"], input[type="datetime-local"], select {
+					padding: 0.5rem 0.75rem;
+					border: 1px solid var(--border);
+					border-radius: var(--radius);
+					font-size: 0.95rem;
+					flex: 1;
+					min-width: 200px;
+				}
+				button {
+					background-color: var(--primary);
+					color: white;
+					border: none;
+					padding: 0.5rem 1rem;
+					border-radius: var(--radius);
+					font-weight: 600;
+					cursor: pointer;
+				}
+				button:hover { background-color: var(--primary-dark); }
+				.btn-danger { background-color: #ef4444; }
+				.btn-danger:hover { background-color: #dc2626; }
+				.btn-link {
+					display: inline-block;
+					text-decoration: none;
+					background: var(--primary);
+					color: white;
+					padding: 0.4rem 0.8rem;
+					border-radius: var(--radius);
+					font-size: 0.85rem;
+				}
+			</style>
+		</head>
+		<body>
+			<header>
+				<h1><a href="/app">⚽ CanchApp</a></h1>
+				<nav>
+					<a href="/app">Deportes</a>
+					<a href="/app/reservas">Mis Reservas</a>
+					<a href="/deportes" target="_blank">API REST</a>
+				</nav>
+			</header>
+			<main>
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
