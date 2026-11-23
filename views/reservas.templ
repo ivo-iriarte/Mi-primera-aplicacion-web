@@ -62,7 +62,6 @@ templ ReservasPage(reservas []sqlc.Reserva, canchas []sqlc.ListCanchasRow, usuar
 				hx-target="#contenedor-tabla-reservas"
 				hx-swap="outerHTML"
 				hx-indicator="#spinner-reserva"
-				hx-on::after-request="if(event.detail.successful) this.reset()"
 				style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;"
 			>
 				<div>
