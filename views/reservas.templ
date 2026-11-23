@@ -5,11 +5,66 @@ import (
 	"fmt"
 )
 
+templ ReservasTabla(reservas []sqlc.Reserva) {
+	<div id="contenedor-tabla-reservas">
+		if len(reservas) == 0 {
+			<p style="margin-top: 1rem; color: #64748b;">No hay reservas registradas en el sistema.</p>
+		} else {
+			<table>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Cancha</th>
+						<th>Usuario</th>
+						<th>Fecha y Hora</th>
+						<th>Total</th>
+						<th>Acción</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, r := range reservas {
+						<tr id={ fmt.Sprintf("reserva-%d", r.IDReserva) }>
+							<td>#{ fmt.Sprintf("%d", r.IDReserva) }</td>
+							<td>Cancha #{ fmt.Sprintf("%d", r.IDCancha) }</td>
+							<td>User #{ fmt.Sprintf("%d", r.IDUsuario) }</td>
+							<td>{ r.FechaInicio.Format("02/01/2006 15:04") }</td>
+							<td>${ r.PrecioTotal }</td>
+							<td>
+								<button
+									type="button"
+									class="btn-danger"
+									style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
+									hx-post="/app/reservas/cancelar"
+									hx-vals={ fmt.Sprintf(`{"id_reserva": "%d"}`, r.IDReserva) }
+									hx-target="closest tr"
+									hx-swap="outerHTML swap:0.3s"
+									hx-confirm="¿Seguro que deseás cancelar este turno?"
+								>
+									Cancelar
+								</button>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		}
+	</div>
+}
+
 templ ReservasPage(reservas []sqlc.Reserva, canchas []sqlc.ListCanchasRow, usuarios []sqlc.Usuario, idCanchaPreseleccionada int32) {
 	@Layout("Mis Reservas") {
 		<div class="card">
 			<h2>Reservar Turno</h2>
-			<form action="/app/reservas/crear" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+			<form
+				action="/app/reservas/crear"
+				method="POST"
+				hx-post="/app/reservas/crear"
+				hx-target="#contenedor-tabla-reservas"
+				hx-swap="outerHTML"
+				hx-indicator="#spinner-reserva"
+				hx-on::after-request="if(event.detail.successful) this.reset()"
+				style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;"
+			>
 				<div>
 					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Usuario:</label>
 					<select name="id_usuario" required style="width: 100%;">
@@ -42,47 +97,14 @@ templ ReservasPage(reservas []sqlc.Reserva, canchas []sqlc.ListCanchasRow, usuar
 				</div>
 				<div style="grid-column: 1 / -1; margin-top: 0.5rem;">
 					<button type="submit" style="width: 100%;">Confirmar Reserva</button>
+					<span id="spinner-reserva" class="htmx-indicator" style="margin-top: 0.5rem;">Procesando reserva...</span>
 				</div>
 			</form>
 		</div>
 
 		<div class="card">
 			<h2>Turnos Reservados</h2>
-			if len(reservas) == 0 {
-				<p style="margin-top: 1rem; color: #64748b;">No hay reservas registradas en el sistema.</p>
-			} else {
-				<table>
-					<thead>
-						<tr>
-							<th>ID</th>
-							<th>Cancha</th>
-							<th>Usuario</th>
-							<th>Fecha y Hora</th>
-							<th>Total</th>
-							<th>Acción</th>
-						</tr>
-					</thead>
-					<tbody>
-						for _, r := range reservas {
-							<tr>
-								<td>#{ fmt.Sprintf("%d", r.IDReserva) }</td>
-								<td>Cancha #{ fmt.Sprintf("%d", r.IDCancha) }</td>
-								<td>User #{ fmt.Sprintf("%d", r.IDUsuario) }</td>
-								<td>{ r.FechaInicio.Format("02/01/2006 15:04") }</td>
-								<td>${ r.PrecioTotal }</td>
-								<td>
-									<form action="/app/reservas/cancelar" method="POST" style="margin:0;">
-										<input type="hidden" name="id_reserva" value={ fmt.Sprintf("%d", r.IDReserva) }/>
-										<button type="submit" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
-											Cancelar
-										</button>
-									</form>
-								</td>
-							</tr>
-						}
-					</tbody>
-				</table>
-			}
+			@ReservasTabla(reservas)
 		</div>
 	}
 }
