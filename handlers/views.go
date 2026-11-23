@@ -19,6 +19,10 @@ func NewViewsHandler(queries *sqlc.Queries) *ViewsHandler {
 	return &ViewsHandler{queries: queries}
 }
 
+func isHTMX(r *http.Request) bool {
+	return r.Header.Get("HX-Request") == "true"
+}
+
 func (vh *ViewsHandler) Home(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	deportes, err := vh.queries.ListDeportes(ctx)
@@ -34,9 +38,31 @@ func (vh *ViewsHandler) CrearDeporte(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
+	ctx := r.Context()
 	nombre := strings.TrimSpace(r.FormValue("nombre"))
+
+	if isHTMX(r) {
+		if nombre == "" {
+			deportes, _ := vh.queries.ListDeportes(ctx)
+			views.DeportesGrid(deportes).Render(ctx, w)
+			views.FlashMessage("El nombre del deporte no puede estar vacío.", "error", true).Render(ctx, w)
+			return
+		}
+
+		_, err := vh.queries.CreateDeporte(ctx, nombre)
+		deportes, _ := vh.queries.ListDeportes(ctx)
+		views.DeportesGrid(deportes).Render(ctx, w)
+
+		if err != nil {
+			views.FlashMessage("Error al registrar el deporte: "+err.Error(), "error", true).Render(ctx, w)
+		} else {
+			views.FlashMessage("Deporte '"+nombre+"' agregado correctamente.", "success", true).Render(ctx, w)
+		}
+		return
+	}
+
 	if nombre != "" {
-		_, _ = vh.queries.CreateDeporte(r.Context(), nombre)
+		_, _ = vh.queries.CreateDeporte(ctx, nombre)
 	}
 	http.Redirect(w, r, "/app", http.StatusSeeOther)
 }
@@ -71,6 +97,11 @@ func (vh *ViewsHandler) CanchasPorDeporte(w http.ResponseWriter, r *http.Request
 		if c.IDDeporte == int32(idDeporte) {
 			canchasFiltradas = append(canchasFiltradas, sqlc.ListCanchasRow(c))
 		}
+	}
+
+	if isHTMX(r) {
+		views.CanchasPartial(deporte, canchasFiltradas).Render(ctx, w)
+		return
 	}
 
 	views.CanchasPage(deporte, canchasFiltradas).Render(ctx, w)
@@ -124,12 +155,24 @@ func (vh *ViewsHandler) CrearReserva(w http.ResponseWriter, r *http.Request) {
 	fechaFin, err2 := time.Parse(layout, finStr)
 
 	if err1 != nil || err2 != nil || !fechaFin.After(fechaInicio) {
+		if isHTMX(r) {
+			reservas, _ := vh.queries.ListReservas(ctx)
+			views.ReservasTabla(reservas).Render(ctx, w)
+			views.FlashMessage("Rango de fechas inválido: la fecha de fin debe ser posterior al inicio.", "error", true).Render(ctx, w)
+			return
+		}
 		http.Error(w, "Rango de fechas inválido", http.StatusBadRequest)
 		return
 	}
 
 	cancha, err := vh.queries.GetCancha(ctx, int32(idCancha))
 	if err != nil {
+		if isHTMX(r) {
+			reservas, _ := vh.queries.ListReservas(ctx)
+			views.ReservasTabla(reservas).Render(ctx, w)
+			views.FlashMessage("La cancha seleccionada no existe.", "error", true).Render(ctx, w)
+			return
+		}
 		http.Error(w, "Cancha inexistente", http.StatusBadRequest)
 		return
 	}
@@ -160,6 +203,17 @@ func (vh *ViewsHandler) CrearReserva(w http.ResponseWriter, r *http.Request) {
 		Observaciones: obsNull,
 	})
 
+	if isHTMX(r) {
+		reservas, _ := vh.queries.ListReservas(ctx)
+		views.ReservasTabla(reservas).Render(ctx, w)
+		if err != nil {
+			views.FlashMessage("Error al registrar la reserva: "+err.Error(), "error", true).Render(ctx, w)
+		} else {
+			views.FlashMessage("Turno reservado con éxito para "+cancha.Nombre+".", "success", true).Render(ctx, w)
+		}
+		return
+	}
+
 	if err != nil {
 		http.Error(w, "Error al registrar la reserva: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -173,9 +227,17 @@ func (vh *ViewsHandler) CancelarReserva(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
+	ctx := r.Context()
 	idReserva, err := strconv.Atoi(r.FormValue("id_reserva"))
+
 	if err == nil {
-		_, _ = vh.queries.DeleteReserva(r.Context(), int32(idReserva))
+		_, _ = vh.queries.DeleteReserva(ctx, int32(idReserva))
 	}
+
+	if isHTMX(r) {
+		views.FlashMessage("Reserva cancelada correctamente.", "success", true).Render(ctx, w)
+		return
+	}
+
 	http.Redirect(w, r, "/app/reservas", http.StatusSeeOther)
 }
