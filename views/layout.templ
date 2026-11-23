@@ -7,6 +7,7 @@ templ Layout(title string) {
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title } - CanchApp</title>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 			<style>
 				:root {
 					--primary: #2563eb;
@@ -119,20 +120,70 @@ templ Layout(title string) {
 					border-radius: var(--radius);
 					font-size: 0.85rem;
 				}
+				/* Efectos reactivos HTMX */
+				tr.htmx-swapping td {
+					opacity: 0;
+					transition: opacity 0.3s ease-out;
+				}
+				.htmx-indicator {
+					display: none;
+					font-size: 0.85rem;
+					color: var(--primary);
+					font-weight: 600;
+				}
+				.htmx-request .htmx-indicator,
+				.htmx-request.htmx-indicator {
+					display: inline-block;
+				}
+				.alert {
+					padding: 0.75rem 1rem;
+					border-radius: var(--radius);
+					margin-bottom: 1rem;
+					font-size: 0.9rem;
+					font-weight: 500;
+				}
+				.alert-success {
+					background-color: #dcfce7;
+					color: #166534;
+					border: 1px solid #bbf7d0;
+				}
+				.alert-error {
+					background-color: #fee2e2;
+					color: #991b1b;
+					border: 1px solid #fecaca;
+				}
 			</style>
 		</head>
 		<body>
 			<header>
-				<h1><a href="/app">⚽ CanchApp</a></h1>
-				<nav>
+				<h1><a href="/app" hx-boost="true" hx-target="#main-content" hx-select="#main-content" hx-swap="outerHTML">⚽ CanchApp</a></h1>
+				<nav hx-boost="true" hx-target="#main-content" hx-select="#main-content" hx-swap="outerHTML">
 					<a href="/app">Deportes</a>
 					<a href="/app/reservas">Mis Reservas</a>
-					<a href="/deportes" target="_blank">API REST</a>
+					<a href="/deportes" hx-boost="false" target="_blank">API REST</a>
 				</nav>
 			</header>
-			<main>
+			<main id="main-content">
+				<div id="toast-container"></div>
 				{ children... }
 			</main>
 		</body>
 	</html>
+}
+
+// Componente reutilizable para mensajes de feedback (soporta Out-of-Band Swap)
+templ FlashMessage(mensaje string, tipo string, oob bool) {
+	if oob {
+		<div id="toast-container" hx-swap-oob="innerHTML">
+			if mensaje != "" {
+				<div class={ "alert", templ.KV("alert-success", tipo == "success"), templ.KV("alert-error", tipo == "error") }>
+					{ mensaje }
+				</div>
+			}
+		</div>
+	} else if mensaje != "" {
+		<div class={ "alert", templ.KV("alert-success", tipo == "success"), templ.KV("alert-error", tipo == "error") }>
+			{ mensaje }
+		</div>
+	}
 }
