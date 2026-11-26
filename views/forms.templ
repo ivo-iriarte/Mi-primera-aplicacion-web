@@ -1,0 +1,86 @@
+package views
+
+import (
+	sqlc "canchapp/db/sqlc"
+	"fmt"
+)
+
+templ DeporteForm() {
+	<form
+		id="deporte-form"
+		class="form-deporte"
+		action="/app/deportes"
+		method="POST"
+		hx-post="/app/deportes"
+		hx-target="#lista-deportes"
+		hx-swap="outerHTML"
+		hx-indicator="#spinner-deporte"
+	>
+		<div class="form-field">
+			<label for="nombre-deporte">Nombre del deporte:</label>
+			<input id="nombre-deporte" type="text" name="nombre" placeholder="Nombre (ej. Básquet)" required/>
+		</div>
+		<button type="submit">Guardar</button>
+		<span id="spinner-deporte" class="htmx-indicator">Guardando...</span>
+	</form>
+}
+
+templ DeporteFormOOB() {
+	<div id="deporte-form-container" hx-swap-oob="true">
+		@DeporteForm()
+	</div>
+}
+
+templ ReservaForm(canchas []sqlc.ListCanchasRow, usuarios []sqlc.Usuario, idCanchaPreseleccionada int32) {
+	<form
+		id="reserva-form"
+		class="form-reserva"
+		action="/app/reservas"
+		method="POST"
+		hx-post="/app/reservas"
+		hx-target="#contenedor-tabla-reservas"
+		hx-swap="outerHTML"
+		hx-indicator="#spinner-reserva"
+	>
+		<div class="form-field">
+			<label for="reserva-usuario">Usuario:</label>
+			<select id="reserva-usuario" name="id_usuario" required>
+				for _, u := range usuarios {
+					<option value={ fmt.Sprintf("%d", u.IDUsuario) }>{ u.Nombre } { u.Apellido } ({ u.Email })</option>
+				}
+			</select>
+		</div>
+		<div class="form-field">
+			<label for="reserva-cancha">Cancha:</label>
+			<select id="reserva-cancha" name="id_cancha" required>
+				for _, c := range canchas {
+					<option value={ fmt.Sprintf("%d", c.IDCancha) } selected?={ c.IDCancha == idCanchaPreseleccionada }>
+						{ c.Nombre } (${ c.Precio })
+					</option>
+				}
+			</select>
+		</div>
+		<div class="form-field">
+			<label for="reserva-inicio">Inicio:</label>
+			<input id="reserva-inicio" type="datetime-local" name="fecha_inicio" required/>
+		</div>
+		<div class="form-field">
+			<label for="reserva-fin">Fin:</label>
+			<input id="reserva-fin" type="datetime-local" name="fecha_fin" required/>
+		</div>
+		<div class="form-field form-field-full">
+			<label for="reserva-observaciones">Observaciones:</label>
+			<input id="reserva-observaciones" type="text" name="observaciones" placeholder="Opcional: Requerimientos extra"/>
+		</div>
+		<div class="form-actions">
+			<button type="submit" class="btn-block">Confirmar Reserva</button>
+			<span id="spinner-reserva" class="htmx-indicator">Procesando reserva...</span>
+		</div>
+	</form>
+}
+
+templ ReservaFormOOB(canchas []sqlc.ListCanchasRow, usuarios []sqlc.Usuario, idCanchaPreseleccionada int32) {
+	<div id="reserva-form-container" hx-swap-oob="true">
+		@ReservaForm(canchas, usuarios, idCanchaPreseleccionada)
+	</div>
+}

@@ -2,9 +2,17 @@ APP_NAME := canchapp
 TEMPL_VERSION := v0.3.833
 SQLC_VERSION := v1.31.1
 
-.PHONY: all run-app generate build db_down db_up clean check-no-js
+.PHONY: all run-app generate build test db_down db_up clean check-no-js
 
 all: run-app
+
+# Verifica que el repositorio no contenga archivos JavaScript propios
+check-no-js:
+	@echo "Verificando ausencia de archivos JavaScript propios..."
+	@if [ -n "$$(find . -name '*.js' -not -path './.git/*' -not -path './tmp/*')" ]; then \
+		echo "Error: se encontraron archivos .js en el repositorio"; \
+		exit 1; \
+	fi
 
 # Tareas previas: sqlc + templ generate
 generate:
@@ -18,7 +26,14 @@ generate:
 build: check-no-js generate
 	@echo "Compilando aplicación..."
 	@mkdir -p tmp
+	@go vet ./...
 	@go build -o tmp/$(APP_NAME) .
+
+# Ejecución de tests con PostgreSQL levantado
+test: db_up generate
+	@echo "Ejecutando go vet y tests..."
+	@go vet ./...
+	@go test -v ./...
 
 # Limpieza de Docker
 db_down:
@@ -43,13 +58,13 @@ db_up: db_down
 		('Cancha Padel Cristal', 14000.00, 90, '09:00:00', '23:00:00', 1, 2) ON CONFLICT DO NOTHING; \
 		INSERT INTO estados_reservas (nombre) VALUES ('Confirmada'), ('Cancelada') ON CONFLICT DO NOTHING;"
 
-# TARGET TP5: Tareas previas -> Ejecución -> Tareas posteriores con trap
+# Tareas previas -> Ejecución -> Tareas posteriores con trap
 run-app: db_up build
 	@echo "=================================================="
 	@echo " CanchApp iniciada en: http://localhost:8080/app"
 	@echo " Presione Ctrl+C para finalizar y limpiar."
 	@echo "=================================================="
-	@trap 'echo "\nLimpiando contenedores y volúmenes..."; $(MAKE) clean; exit 0' INT TERM EXIT; \
+	@trap 'trap - INT TERM EXIT; echo "\nLimpiando contenedores y volúmenes..."; $(MAKE) clean; exit 0' INT TERM EXIT; \
 	./tmp/$(APP_NAME)
 
 clean: db_down

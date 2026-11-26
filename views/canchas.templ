@@ -5,34 +5,31 @@ import (
 	"fmt"
 )
 
-templ CanchasPartial(deporte sqlc.Deporte, canchas []sqlc.ListCanchasRow) {
-	<div id="toast-container"></div>
-	<div class="card">
-		<div style="display: flex; justify-content: space-between; align-items: center;">
+templ CanchasPartial(deporte sqlc.Deporte, canchas []sqlc.Cancha) {
+	<section class="card">
+		<div class="section-header">
 			<h2>Canchas para { deporte.Nombre }</h2>
 			<a
+				class="link-back"
 				href="/app"
 				hx-get="/app"
 				hx-target="#main-content"
-				hx-select="#main-content"
-				hx-swap="outerHTML"
 				hx-push-url="true"
-				style="color: var(--primary); text-decoration: none;"
 			>
 				← Volver a deportes
 			</a>
 		</div>
 		if len(canchas) == 0 {
-			<p style="margin-top: 1rem; color: #64748b;">No hay canchas registradas para este deporte.</p>
+			<p class="empty-state">No hay canchas registradas para este deporte.</p>
 		} else {
 			<table>
 				<thead>
 					<tr>
-						<th>Nombre</th>
-						<th>Precio</th>
-						<th>Duración Turno</th>
-						<th>Horario</th>
-						<th>Acción</th>
+						<th scope="col">Nombre</th>
+						<th scope="col">Precio</th>
+						<th scope="col">Duración Turno</th>
+						<th scope="col">Horario</th>
+						<th scope="col">Acción</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -48,8 +45,6 @@ templ CanchasPartial(deporte sqlc.Deporte, canchas []sqlc.ListCanchasRow) {
 									href={ templ.SafeURL(fmt.Sprintf("/app/reservas?id_cancha=%d", c.IDCancha)) }
 									hx-get={ fmt.Sprintf("/app/reservas?id_cancha=%d", c.IDCancha) }
 									hx-target="#main-content"
-									hx-select="#main-content"
-									hx-swap="outerHTML"
 									hx-push-url="true"
 								>
 									Reservar Turno
@@ -60,10 +55,10 @@ templ CanchasPartial(deporte sqlc.Deporte, canchas []sqlc.ListCanchasRow) {
 				</tbody>
 			</table>
 		}
-	</div>
+	</section>
 }
 
-templ CanchasPage(deporte sqlc.Deporte, canchas []sqlc.ListCanchasRow) {
+templ CanchasPage(deporte sqlc.Deporte, canchas []sqlc.Cancha) {
 	@Layout("Canchas de " + deporte.Nombre) {
 		@CanchasPartial(deporte, canchas)
 	}

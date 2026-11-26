@@ -8,17 +8,17 @@ import (
 templ ReservasTabla(reservas []sqlc.Reserva) {
 	<div id="contenedor-tabla-reservas">
 		if len(reservas) == 0 {
-			<p style="margin-top: 1rem; color: #64748b;">No hay reservas registradas en el sistema.</p>
+			<p class="empty-state">No hay reservas registradas en el sistema.</p>
 		} else {
 			<table>
 				<thead>
 					<tr>
-						<th>ID</th>
-						<th>Cancha</th>
-						<th>Usuario</th>
-						<th>Fecha y Hora</th>
-						<th>Total</th>
-						<th>Acción</th>
+						<th scope="col">ID</th>
+						<th scope="col">Cancha</th>
+						<th scope="col">Usuario</th>
+						<th scope="col">Fecha y Hora</th>
+						<th scope="col">Total</th>
+						<th scope="col">Acción</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -32,15 +32,13 @@ templ ReservasTabla(reservas []sqlc.Reserva) {
 							<td>
 								<button
 									type="button"
-									class="btn-danger"
-									style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
-									hx-post="/app/reservas/cancelar"
-									hx-vals={ fmt.Sprintf(`{"id_reserva": "%d"}`, r.IDReserva) }
+									class="btn-danger btn-sm"
+									hx-delete={ fmt.Sprintf("/app/reservas/%d", r.IDReserva) }
 									hx-target="closest tr"
-									hx-swap="outerHTML swap:0.3s"
+									hx-swap="outerHTML swap:300ms"
 									hx-confirm="¿Seguro que deseás cancelar este turno?"
 								>
-									Cancelar
+									Borrar
 								</button>
 							</td>
 						</tr>
@@ -51,59 +49,22 @@ templ ReservasTabla(reservas []sqlc.Reserva) {
 	</div>
 }
 
+templ ReservasContent(reservas []sqlc.Reserva, canchas []sqlc.ListCanchasRow, usuarios []sqlc.Usuario, idCanchaPreseleccionada int32) {
+	<section class="card">
+		<h2>Reservar Turno</h2>
+		<div id="reserva-form-container">
+			@ReservaForm(canchas, usuarios, idCanchaPreseleccionada)
+		</div>
+	</section>
+
+	<section class="card">
+		<h2>Turnos Reservados</h2>
+		@ReservasTabla(reservas)
+	</section>
+}
+
 templ ReservasPage(reservas []sqlc.Reserva, canchas []sqlc.ListCanchasRow, usuarios []sqlc.Usuario, idCanchaPreseleccionada int32) {
 	@Layout("Mis Reservas") {
-		<div class="card">
-			<h2>Reservar Turno</h2>
-			<form
-				action="/app/reservas/crear"
-				method="POST"
-				hx-post="/app/reservas/crear"
-				hx-target="#contenedor-tabla-reservas"
-				hx-swap="outerHTML"
-				hx-indicator="#spinner-reserva"
-				style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;"
-			>
-				<div>
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Usuario:</label>
-					<select name="id_usuario" required style="width: 100%;">
-						for _, u := range usuarios {
-							<option value={ fmt.Sprintf("%d", u.IDUsuario) }>{ u.Nombre } { u.Apellido } ({ u.Email })</option>
-						}
-					</select>
-				</div>
-				<div>
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Cancha:</label>
-					<select name="id_cancha" required style="width: 100%;">
-						for _, c := range canchas {
-							<option value={ fmt.Sprintf("%d", c.IDCancha) } selected?={ c.IDCancha == idCanchaPreseleccionada }>
-								{ c.Nombre } (${ c.Precio })
-							</option>
-						}
-					</select>
-				</div>
-				<div>
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Inicio:</label>
-					<input type="datetime-local" name="fecha_inicio" required style="width: 100%;"/>
-				</div>
-				<div>
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Fin:</label>
-					<input type="datetime-local" name="fecha_fin" required style="width: 100%;"/>
-				</div>
-				<div style="grid-column: 1 / -1;">
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Observaciones:</label>
-					<input type="text" name="observaciones" placeholder="Opcional: Requerimientos extra" style="width: 100%;"/>
-				</div>
-				<div style="grid-column: 1 / -1; margin-top: 0.5rem;">
-					<button type="submit" style="width: 100%;">Confirmar Reserva</button>
-					<span id="spinner-reserva" class="htmx-indicator" style="margin-top: 0.5rem;">Procesando reserva...</span>
-				</div>
-			</form>
-		</div>
-
-		<div class="card">
-			<h2>Turnos Reservados</h2>
-			@ReservasTabla(reservas)
-		</div>
+		@ReservasContent(reservas, canchas, usuarios, idCanchaPreseleccionada)
 	}
 }

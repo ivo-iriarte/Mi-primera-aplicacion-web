@@ -1,0 +1,5 @@
+tmp/
+db/sqlc/
+views/*_templ.go
+.env
+*.log

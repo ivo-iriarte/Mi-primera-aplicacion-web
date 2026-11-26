@@ -8,20 +8,22 @@ import (
 templ DeportesGrid(deportes []sqlc.Deporte) {
 	<div id="lista-deportes">
 		if len(deportes) == 0 {
-			<p style="margin-top: 1rem; color: #64748b;">No hay deportes disponibles.</p>
+			<p class="empty-state">No hay deportes disponibles.</p>
 		} else {
 			<div class="grid">
 				for _, d := range deportes {
-					<div class="card" style="margin-bottom: 0;">
-						<h3>{ d.Nombre }</h3>
-						<span class="badge" style="margin: 0.5rem 0;">
-							if d.Activo {
-								Activo
-							} else {
-								Inactivo
-							}
-						</span>
+					<article class="card deporte-card" id={ fmt.Sprintf("deporte-%d", d.IDDeporte) }>
 						<div>
+							<h3>{ d.Nombre }</h3>
+							<span class="badge">
+								if d.Activo {
+									Activo
+								} else {
+									Inactivo
+								}
+							</span>
+						</div>
+						<div class="deporte-card-actions">
 							<a
 								class="btn-link"
 								href={ templ.SafeURL(fmt.Sprintf("/app/deportes/%d/canchas", d.IDDeporte)) }
@@ -31,37 +33,41 @@ templ DeportesGrid(deportes []sqlc.Deporte) {
 							>
 								Ver Canchas →
 							</a>
+							<button
+								type="button"
+								class="btn-danger btn-sm"
+								hx-delete={ fmt.Sprintf("/app/deportes/%d", d.IDDeporte) }
+								hx-target="closest .deporte-card"
+								hx-swap="outerHTML swap:300ms"
+								hx-confirm="¿Estás seguro de que deseás eliminar este deporte?"
+							>
+								Eliminar
+							</button>
 						</div>
-					</div>
+					</article>
 				}
 			</div>
 		}
 	</div>
 }
 
+templ DeportesContent(deportes []sqlc.Deporte) {
+	<section class="card">
+		<h2>Deportes Disponibles</h2>
+		<p>Seleccioná un deporte para ver las canchas asociadas.</p>
+		@DeportesGrid(deportes)
+	</section>
+
+	<section class="card">
+		<h3>Registrar Nuevo Deporte</h3>
+		<div id="deporte-form-container">
+			@DeporteForm()
+		</div>
+	</section>
+}
+
 templ DeportesPage(deportes []sqlc.Deporte) {
 	@Layout("Deportes Disponibles") {
-		<div class="card">
-			<h2>Deportes Disponibles</h2>
-			<p>Seleccioná un deporte para ver las canchas asociadas.</p>
-			@DeportesGrid(deportes)
-		</div>
-
-		<div class="card">
-			<h3>Registrar Nuevo Deporte</h3>
-			<form
-				action="/app/deportes/crear"
-				method="POST"
-				hx-post="/app/deportes/crear"
-				hx-target="#lista-deportes"
-				hx-swap="outerHTML"
-				hx-indicator="#spinner-deporte"
-				hx-on::after-request="if(event.detail.successful) this.reset()"
-			>
-				<input type="text" name="nombre" placeholder="Nombre (ej. Basquet)" required/>
-				<button type="submit">Guardar</button>
-				<span id="spinner-deporte" class="htmx-indicator">Guardando...</span>
-			</form>
-		</div>
+		@DeportesContent(deportes)
 	}
 }

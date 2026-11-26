@@ -19,6 +19,12 @@ SELECT id_cancha,nombre, precio, activa, duracion_turno_minutos, hora_apertura,h
 FROM cancha
 WHERE activa = TRUE;
 
+-- name: ListCanchasActivasByDeporte :many
+SELECT *
+FROM cancha
+WHERE activa = TRUE AND id_deporte = $1
+ORDER BY id_cancha;
+
 -- name: UpdatePrecioCancha :execrows
 UPDATE cancha 
 SET precio = $2, updated_at = NOW()

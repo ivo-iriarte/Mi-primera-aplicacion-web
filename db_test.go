@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	sqlc "canchapp/db/sqlc"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func TestQueries_CRUD(t *testing.T) {
