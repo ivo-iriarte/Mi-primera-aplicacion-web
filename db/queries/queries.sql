@@ -1,23 +1,47 @@
 -- CANCHA
 
 -- name: CreateCancha :one
-INSERT into cancha(nombre,precio,duracion_turno_minutos,hora_apertura,hora_cierre,id_institucion,id_deporte)
-VALUES($1, $2, $3, $4, $5, $6,$7)
+INSERT INTO cancha (nombre, precio, duracion_turno_minutos, hora_apertura, hora_cierre, id_institucion, id_deporte)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- name: GetCancha :one
-SELECT id_cancha,nombre, precio, activa, duracion_turno_minutos, hora_apertura,hora_cierre,id_institucion,id_deporte
+SELECT id_cancha, nombre, precio, activa, duracion_turno_minutos, hora_apertura, hora_cierre, id_institucion, id_deporte
 FROM cancha
 WHERE id_cancha = $1;
 
 -- name: ListCanchas :many
-SELECT id_cancha,nombre, precio, activa, duracion_turno_minutos, hora_apertura,hora_cierre,id_institucion,id_deporte
-FROM cancha;
+SELECT id_cancha, nombre, precio, activa, duracion_turno_minutos, hora_apertura, hora_cierre, id_institucion, id_deporte
+FROM cancha
+ORDER BY id_cancha;
 
 -- name: ListCanchasActivas :many
-SELECT id_cancha,nombre, precio, activa, duracion_turno_minutos, hora_apertura,hora_cierre,id_institucion,id_deporte
+SELECT id_cancha, nombre, precio, activa, duracion_turno_minutos, hora_apertura, hora_cierre, id_institucion, id_deporte
 FROM cancha
-WHERE activa = TRUE;
+WHERE activa = TRUE
+ORDER BY nombre;
+
+-- name: ListCanchasByDeporte :many
+SELECT id_cancha, nombre, precio, activa, duracion_turno_minutos, hora_apertura, hora_cierre, id_institucion, id_deporte
+FROM cancha
+WHERE id_deporte = $1
+  AND activa = TRUE
+ORDER BY nombre;
+
+-- name: ListCanchasByInstitucion :many
+SELECT id_cancha, nombre, precio, activa, duracion_turno_minutos, hora_apertura, hora_cierre, id_institucion, id_deporte
+FROM cancha
+WHERE id_institucion = $1
+  AND activa = TRUE
+ORDER BY nombre;
+
+-- name: ListCanchasByInstitucionYDeporte :many
+SELECT id_cancha, nombre, precio, activa, duracion_turno_minutos, hora_apertura, hora_cierre, id_institucion, id_deporte
+FROM cancha
+WHERE id_institucion = $1
+  AND id_deporte = $2
+  AND activa = TRUE
+ORDER BY nombre;
 
 -- name: UpdatePrecioCancha :execrows
 UPDATE cancha 
@@ -65,6 +89,20 @@ WHERE id_institucion = $1;
 SELECT * FROM institucion
 ORDER BY id_institucion;
 
+-- name: ListInstitucionesActivas :many
+SELECT * FROM institucion
+WHERE activo = TRUE
+ORDER BY nombre;
+
+-- name: ListInstitucionesByDeporte :many
+SELECT DISTINCT i.*
+FROM institucion i
+JOIN cancha c ON c.id_institucion = i.id_institucion
+WHERE c.id_deporte = $1
+  AND i.activo = TRUE
+  AND c.activa = TRUE
+ORDER BY i.nombre;
+
 -- name: UpdateInstitucion :one
 UPDATE institucion
 SET nombre = $2,
@@ -94,9 +132,27 @@ RETURNING *;
 SELECT * FROM deporte
 WHERE id_deporte = $1;
 
+-- name: GetDeporteByNombre :one
+SELECT * FROM deporte
+WHERE nombre = $1;
+
 -- name: ListDeportes :many
 SELECT * FROM deporte
 ORDER BY id_deporte;
+
+-- name: ListDeportesActivos :many
+SELECT * FROM deporte
+WHERE activo = TRUE
+ORDER BY nombre;
+
+-- name: ListDeportesByInstitucion :many
+SELECT DISTINCT d.*
+FROM deporte d
+JOIN cancha c ON c.id_deporte = d.id_deporte
+WHERE c.id_institucion = $1
+  AND d.activo = TRUE
+  AND c.activa = TRUE
+ORDER BY d.nombre;
 
 -- name: UpdateDeporte :one
 UPDATE deporte
@@ -135,6 +191,11 @@ WHERE email = $1;
 SELECT * FROM usuario
 ORDER BY id_usuario;
 
+-- name: ListUsuariosActivos :many
+SELECT * FROM usuario
+WHERE activo = TRUE
+ORDER BY id_usuario;
+
 -- name: UpdateUsuario :one
 UPDATE usuario
 SET nombre = $2,
@@ -161,6 +222,10 @@ RETURNING *;
 -- name: GetEstadoReserva :one
 SELECT * FROM estados_reservas
 WHERE id_estados_reserva = $1;
+
+-- name: GetEstadoReservaByNombre :one
+SELECT * FROM estados_reservas
+WHERE nombre = $1;
 
 -- name: ListEstadosReservas :many
 SELECT * FROM estados_reservas
@@ -191,6 +256,11 @@ WHERE id_servicio = $1;
 SELECT * FROM servicios
 ORDER BY id_servicio;
 
+-- name: ListServiciosActivos :many
+SELECT * FROM servicios
+WHERE activo = TRUE
+ORDER BY servicio;
+
 -- name: UpdateServicio :one
 UPDATE servicios
 SET servicio = $2,
@@ -217,7 +287,16 @@ WHERE id_cancha = $1 AND id_servicio = $2;
 SELECT s.*
 FROM servicios s
 JOIN cancha_servicio cs ON s.id_servicio = cs.id_servicio
-WHERE cs.id_cancha = $1;
+WHERE cs.id_cancha = $1
+ORDER BY s.servicio;
+
+-- name: ListCanchasByServicio :many
+SELECT c.id_cancha, c.nombre, c.precio, c.activa, c.duracion_turno_minutos, c.hora_apertura, c.hora_cierre, c.id_institucion, c.id_deporte
+FROM cancha c
+JOIN cancha_servicio cs ON c.id_cancha = cs.id_cancha
+WHERE cs.id_servicio = $1
+  AND c.activa = TRUE
+ORDER BY c.nombre;
 
 -- RESERVAS
 
@@ -251,6 +330,92 @@ ORDER BY fecha_inicio;
 SELECT * FROM reservas
 WHERE id_usuario = $1
 ORDER BY fecha_inicio DESC;
+
+-- name: ExisteReservaSolapada :one
+SELECT EXISTS (
+    SELECT 1
+    FROM reservas r
+    JOIN estados_reservas e ON r.id_estado = e.id_estados_reserva
+    WHERE r.id_cancha = $1
+      AND e.nombre <> 'Cancelada'
+      AND r.fecha_inicio < sqlc.arg(fecha_fin)
+      AND r.fecha_fin > sqlc.arg(fecha_inicio)
+) AS solapada;
+
+-- name: ListReservasActivasByCanchaYRango :many
+SELECT r.*
+FROM reservas r
+JOIN estados_reservas e ON r.id_estado = e.id_estados_reserva
+WHERE r.id_cancha = $1
+  AND e.nombre <> 'Cancelada'
+  AND r.fecha_inicio < sqlc.arg(fecha_fin)
+  AND r.fecha_fin > sqlc.arg(fecha_inicio)
+ORDER BY r.fecha_inicio;
+
+-- name: ListReservasDetalleByUsuario :many
+SELECT
+    r.id_reserva,
+    r.id_usuario,
+    r.id_cancha,
+    r.fecha_inicio,
+    r.fecha_fin,
+    r.id_estado,
+    r.precio_total,
+    r.observaciones,
+    r.created_at,
+    r.updated_at,
+    c.nombre AS cancha_nombre,
+    i.id_institucion,
+    i.nombre AS institucion_nombre,
+    d.id_deporte,
+    d.nombre AS deporte_nombre,
+    e.nombre AS estado_nombre
+FROM reservas r
+JOIN cancha c ON r.id_cancha = c.id_cancha
+JOIN institucion i ON c.id_institucion = i.id_institucion
+JOIN deporte d ON c.id_deporte = d.id_deporte
+JOIN estados_reservas e ON r.id_estado = e.id_estados_reserva
+WHERE r.id_usuario = $1
+ORDER BY r.fecha_inicio DESC;
+
+-- name: ListReservasDetalle :many
+SELECT
+    r.id_reserva,
+    r.id_usuario,
+    u.nombre AS usuario_nombre,
+    u.apellido AS usuario_apellido,
+    r.id_cancha,
+    r.fecha_inicio,
+    r.fecha_fin,
+    r.id_estado,
+    r.precio_total,
+    r.observaciones,
+    r.created_at,
+    r.updated_at,
+    c.nombre AS cancha_nombre,
+    i.id_institucion,
+    i.nombre AS institucion_nombre,
+    d.id_deporte,
+    d.nombre AS deporte_nombre,
+    e.nombre AS estado_nombre
+FROM reservas r
+JOIN usuario u ON r.id_usuario = u.id_usuario
+JOIN cancha c ON r.id_cancha = c.id_cancha
+JOIN institucion i ON c.id_institucion = i.id_institucion
+JOIN deporte d ON c.id_deporte = d.id_deporte
+JOIN estados_reservas e ON r.id_estado = e.id_estados_reserva
+ORDER BY r.fecha_inicio DESC;
+
+-- name: CancelarReserva :one
+UPDATE reservas
+SET id_estado = (
+        SELECT id_estados_reserva
+        FROM estados_reservas
+        WHERE nombre = 'Cancelada'
+    ),
+    updated_at = NOW()
+WHERE id_reserva = $1
+RETURNING *;
 
 -- name: UpdateReservaEstado :one
 UPDATE reservas

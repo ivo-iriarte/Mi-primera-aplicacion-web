@@ -1,70 +1,184 @@
 package views
 
-import (
-	sqlc "canchapp/db/sqlc"
-	"fmt"
-)
+import "fmt"
 
-templ CanchasPartial(deporte sqlc.Deporte, canchas []sqlc.ListCanchasRow) {
-	<div id="toast-container"></div>
-	<div class="card">
-		<div style="display: flex; justify-content: space-between; align-items: center;">
-			<h2>Canchas para { deporte.Nombre }</h2>
-			<a
-				href="/app"
-				hx-get="/app"
-				hx-target="#main-content"
-				hx-select="#main-content"
-				hx-swap="outerHTML"
-				hx-push-url="true"
-				style="color: var(--primary); text-decoration: none;"
-			>
-				← Volver a deportes
-			</a>
+templ DisponibilidadSection(vm DisponibilidadView) {
+	<section id="seccion-disponibilidad" data-cancha-id={ fmt.Sprintf("%d", vm.Cancha.IDCancha) } data-fecha={ vm.FechaSeleccionada }>
+		<div class="card">
+			<div class="section-header" style="margin-bottom: 0.5rem;">
+				<div>
+					<h2 style="font-size: 1.15rem; font-weight: 800;">1. Seleccioná una fecha</h2>
+					<p style="font-size: 0.88rem; color: var(--text-muted);">Viendo disponibilidad para <strong>{ vm.FechaLegible }</strong></p>
+				</div>
+				<form
+					action={ templ.SafeURL(fmt.Sprintf("/app/canchas/%d", vm.Cancha.IDCancha)) }
+					method="GET"
+					hx-get={ fmt.Sprintf("/app/canchas/%d", vm.Cancha.IDCancha) }
+					hx-target="#seccion-disponibilidad"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+					style="display: flex; gap: 0.45rem; align-items: center;"
+				>
+					<input type="date" name="fecha" value={ vm.FechaSeleccionada } aria-label="Elegir otra fecha" style="width: auto;"/>
+					<button type="submit" class="btn-secondary" style="padding: 0.55rem 0.9rem;">Cambiar día</button>
+				</form>
+			</div>
+
+			<div class="days-strip">
+				for _, dia := range vm.Dias {
+					<a
+						class={ "day-chip", templ.KV("day-chip-active", dia.Seleccionado) }
+						href={ templ.SafeURL(fmt.Sprintf("/app/canchas/%d?fecha=%s", vm.Cancha.IDCancha, dia.FechaISO)) }
+						hx-get={ fmt.Sprintf("/app/canchas/%d?fecha=%s", vm.Cancha.IDCancha, dia.FechaISO) }
+						hx-target="#seccion-disponibilidad"
+						hx-swap="outerHTML"
+						hx-push-url="true"
+					>
+						<span class="day-chip-dow">{ dia.DiaSemana }</span>
+						<span class="day-chip-num">{ dia.NumeroDia }</span>
+						<span class="day-chip-dow">{ dia.MesCorto }</span>
+					</a>
+				}
+			</div>
 		</div>
-		if len(canchas) == 0 {
-			<p style="margin-top: 1rem; color: #64748b;">No hay canchas registradas para este deporte.</p>
-		} else {
-			<table>
-				<thead>
-					<tr>
-						<th>Nombre</th>
-						<th>Precio</th>
-						<th>Duración Turno</th>
-						<th>Horario</th>
-						<th>Acción</th>
-					</tr>
-				</thead>
-				<tbody>
-					for _, c := range canchas {
-						<tr>
-							<td><strong>{ c.Nombre }</strong></td>
-							<td>${ c.Precio }</td>
-							<td>{ fmt.Sprintf("%d min", c.DuracionTurnoMinutos) }</td>
-							<td>{ fmt.Sprintf("%s - %s", c.HoraApertura, c.HoraCierre) }</td>
-							<td>
-								<a
-									class="btn-link"
-									href={ templ.SafeURL(fmt.Sprintf("/app/reservas?id_cancha=%d", c.IDCancha)) }
-									hx-get={ fmt.Sprintf("/app/reservas?id_cancha=%d", c.IDCancha) }
-									hx-target="#main-content"
-									hx-select="#main-content"
-									hx-swap="outerHTML"
-									hx-push-url="true"
+
+		<div class="card">
+			<div class="section-header" style="margin-bottom: 0.4rem;">
+				<div>
+					<h2 style="font-size: 1.15rem; font-weight: 800;">2. Elegí un horario disponible y confirmá</h2>
+					<p style="font-size: 0.88rem; color: var(--text-muted);">Los turnos ya reservados aparecen bloqueados automáticamente.</p>
+				</div>
+				<div style="display: flex; gap: 0.5rem; font-size: 0.8rem;">
+					<span class="pill">Disponible</span>
+					<span class="pill pill-cancelled">Ocupado</span>
+				</div>
+			</div>
+
+			<form
+				id="form-reserva"
+				action="/app/reservas/crear"
+				method="POST"
+				hx-post="/app/reservas/crear"
+				hx-target="#seccion-disponibilidad"
+				hx-swap="outerHTML"
+				hx-indicator="#spinner-reserva"
+			>
+				<input type="hidden" name="id_cancha" value={ fmt.Sprintf("%d", vm.Cancha.IDCancha) }/>
+				<input type="hidden" name="fecha" value={ vm.FechaSeleccionada }/>
+
+				if len(vm.Turnos) == 0 {
+					<p style="color: var(--text-muted); margin: 1rem 0;">No hay bloques horarios configurados para esta cancha.</p>
+				} else {
+					<div id="grilla-turnos" class="slots-grid">
+						for _, t := range vm.Turnos {
+							if t.Disponible {
+								<label
+									class="slot-chip"
+									data-hora-inicio={ t.HoraInicio }
+									data-hora-fin={ t.HoraFin }
+									data-disponible="true"
 								>
-									Reservar Turno
-								</a>
-							</td>
-						</tr>
-					}
-				</tbody>
-			</table>
-		}
-	</div>
+									<input type="radio" name="hora_inicio" value={ t.HoraInicio } required/>
+									<span class="slot-chip-box">
+										<span>{ t.HoraInicio }</span>
+										<small style="font-size: 0.72rem; font-weight: 500; opacity: 0.85;">a { t.HoraFin }</small>
+									</span>
+								</label>
+							} else {
+								<div
+									class="slot-ocupado"
+									data-hora-inicio={ t.HoraInicio }
+									data-hora-fin={ t.HoraFin }
+									data-disponible="false"
+									title="Este horario ya se encuentra reservado"
+								>
+									<span>{ t.HoraInicio }</span>
+									<small>Reservado</small>
+								</div>
+							}
+						}
+					</div>
+				}
+
+				if !vm.HayTurnosDisponibles {
+					<div class="alert alert-error" style="margin-top: 0.5rem;">
+						Todos los turnos del día { vm.FechaLegible } están ocupados. Elegí otra fecha arriba para reservar.
+					</div>
+				} else {
+					<div class="form-grid" style="padding-top: 1rem; border-top: 1px solid var(--border);">
+						<div>
+							<label class="field-label" for="select-usuario">Reservar a nombre de:</label>
+							<select id="select-usuario" name="id_usuario" required>
+								for _, u := range vm.Usuarios {
+									<option
+										value={ fmt.Sprintf("%d", u.IDUsuario) }
+										selected?={ u.IDUsuario == vm.IDUsuarioSeleccionado }
+									>
+										{ u.Nombre } { u.Apellido } ({ u.Email })
+									</option>
+								}
+							</select>
+						</div>
+						<div>
+							<label class="field-label" for="input-observaciones">Observaciones (opcional):</label>
+							<input id="input-observaciones" type="text" name="observaciones" placeholder="Ej. Alquiler de pelotas / paletas"/>
+						</div>
+						<div style="display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem;">
+							<button type="submit">
+								Confirmar Reserva (${ vm.Cancha.Precio })
+							</button>
+							<span id="spinner-reserva" class="htmx-indicator" style="text-align: center;">Procesando reserva...</span>
+						</div>
+					</div>
+				}
+			</form>
+		</div>
+	</section>
 }
 
-templ CanchasPage(deporte sqlc.Deporte, canchas []sqlc.ListCanchasRow) {
-	@Layout("Canchas de " + deporte.Nombre) {
-		@CanchasPartial(deporte, canchas)
+templ CanchaDetallePartial(vm DisponibilidadView) {
+	<a
+		class="back-link"
+		href={ templ.SafeURL(fmt.Sprintf("/app/instituciones/%d?id_deporte=%d", vm.Cancha.IDInstitucion, vm.Cancha.IDDeporte)) }
+		hx-get={ fmt.Sprintf("/app/instituciones/%d?id_deporte=%d", vm.Cancha.IDInstitucion, vm.Cancha.IDDeporte) }
+		hx-target="#main-content"
+		hx-swap="innerHTML"
+		hx-push-url="true"
+	>
+		← Volver a { vm.Cancha.InstitucionNombre }
+	</a>
+
+	<section class="cancha-card" style="margin-bottom: 1.25rem;">
+		<div class="cancha-top">
+			<div>
+				<div style="font-size: 0.86rem; font-weight: 600; color: var(--text-muted);">🏟️ { vm.Cancha.InstitucionNombre }</div>
+				<h1 style="font-size: 1.45rem; font-weight: 800; margin-top: 0.1rem;">{ vm.Cancha.Nombre }</h1>
+				<div style="display: flex; gap: 0.45rem; flex-wrap: wrap; margin-top: 0.45rem;">
+					<span class="pill">{ IconoDeporte(vm.Cancha.DeporteNombre) } { vm.Cancha.DeporteNombre }</span>
+					<span class="pill pill-muted">🕒 Horario: { FormatearHoraCorta(vm.Cancha.HoraApertura) } a { FormatearHoraCorta(vm.Cancha.HoraCierre) }</span>
+					<span class="pill pill-muted">{ fmt.Sprintf("⏱️ Turnos de %d min", vm.Cancha.DuracionTurnoMinutos) }</span>
+				</div>
+			</div>
+			<div class="price-tag">
+				<div class="price-amount">${ vm.Cancha.Precio }</div>
+				<div class="price-unit">total por turno</div>
+			</div>
+		</div>
+
+		if len(vm.Cancha.Servicios) > 0 {
+			<div class="services-row">
+				for _, s := range vm.Cancha.Servicios {
+					<span class="pill pill-muted">{ IconoServicio(s.Servicio) } { s.Servicio }</span>
+				}
+			</div>
+		}
+	</section>
+
+	@DisponibilidadSection(vm)
+}
+
+templ CanchaDetallePage(vm DisponibilidadView) {
+	@Layout(vm.Cancha.Nombre) {
+		@CanchaDetallePartial(vm)
 	}
 }

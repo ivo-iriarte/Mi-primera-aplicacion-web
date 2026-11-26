@@ -6,62 +6,84 @@ import (
 )
 
 templ DeportesGrid(deportes []sqlc.Deporte) {
-	<div id="lista-deportes">
+	<section id="lista-deportes">
 		if len(deportes) == 0 {
-			<p style="margin-top: 1rem; color: #64748b;">No hay deportes disponibles.</p>
+			<div class="card">
+				<p style="color: var(--text-muted);">No hay deportes activos cargados en este momento.</p>
+			</div>
 		} else {
-			<div class="grid">
+			<div class="sports-grid">
 				for _, d := range deportes {
-					<div class="card" style="margin-bottom: 0;">
-						<h3>{ d.Nombre }</h3>
-						<span class="badge" style="margin: 0.5rem 0;">
-							if d.Activo {
-								Activo
-							} else {
-								Inactivo
-							}
-						</span>
-						<div>
-							<a
-								class="btn-link"
-								href={ templ.SafeURL(fmt.Sprintf("/app/deportes/%d/canchas", d.IDDeporte)) }
-								hx-get={ fmt.Sprintf("/app/deportes/%d/canchas", d.IDDeporte) }
-								hx-target="#main-content"
-								hx-push-url="true"
-							>
-								Ver Canchas →
-							</a>
-						</div>
-					</div>
+					<a
+						class="sport-card"
+						data-deporte-id={ fmt.Sprintf("%d", d.IDDeporte) }
+						href={ templ.SafeURL(fmt.Sprintf("/app/deportes/%d", d.IDDeporte)) }
+						hx-get={ fmt.Sprintf("/app/deportes/%d", d.IDDeporte) }
+						hx-target="#main-content"
+						hx-swap="innerHTML"
+						hx-push-url="true"
+					>
+						<div class="sport-icon-circle">{ IconoDeporte(d.Nombre) }</div>
+						<div class="sport-name">{ d.Nombre }</div>
+						<span class="pill">Elegir club →</span>
+					</a>
 				}
 			</div>
 		}
+	</section>
+}
+
+// DeporteForm soporta limpieza automática del formulario mediante Out-of-Band Swap (TP6 Ejercicio 3) sin JavaScript.
+templ DeporteForm(oob bool) {
+	<div id="contenedor-form-deporte" if oob { hx-swap-oob="true" }>
+		<form
+			id="form-deporte"
+			action="/app/deportes/crear"
+			method="POST"
+			hx-post="/app/deportes/crear"
+			hx-target="#lista-deportes"
+			hx-swap="outerHTML"
+			hx-indicator="#spinner-deporte"
+			style="display: flex; gap: 0.6rem; margin-top: 0.75rem; flex-wrap: wrap;"
+		>
+			<div style="flex: 1; min-width: 220px;">
+				<input type="text" name="nombre" placeholder="Nombre del nuevo deporte (ej. Básquet)" required/>
+			</div>
+			<button type="submit">Agregar deporte</button>
+			<span id="spinner-deporte" class="htmx-indicator">Guardando...</span>
+		</form>
 	</div>
 }
 
-templ DeportesPage(deportes []sqlc.Deporte) {
-	@Layout("Deportes Disponibles") {
-		<div class="card">
-			<h2>Deportes Disponibles</h2>
-			<p>Seleccioná un deporte para ver las canchas asociadas.</p>
-			@DeportesGrid(deportes)
+templ DeportesPartial(deportes []sqlc.Deporte) {
+	<section class="hero-card">
+		<div>
+			<div class="hero-greeting">¡Hola! 👋</div>
+			<h1 class="hero-title">¿Qué deporte querés jugar hoy?</h1>
+			<p class="hero-subtitle">Elegí un deporte para explorar las instituciones y reservar tu turno.</p>
 		</div>
+		<a
+			class="btn-primary btn-secondary"
+			href="/app/reservas"
+			hx-get="/app/reservas"
+			hx-target="#main-content"
+			hx-swap="innerHTML"
+			hx-push-url="true"
+		>
+			📅 Ver Mis Reservas
+		</a>
+	</section>
 
-		<div class="card">
-			<h3>Registrar Nuevo Deporte</h3>
-			<form
-				action="/app/deportes/crear"
-				method="POST"
-				hx-post="/app/deportes/crear"
-				hx-target="#lista-deportes"
-				hx-swap="outerHTML"
-				hx-indicator="#spinner-deporte"
-				hx-on::after-request="if(event.detail.successful) this.reset()"
-			>
-				<input type="text" name="nombre" placeholder="Nombre (ej. Basquet)" required/>
-				<button type="submit">Guardar</button>
-				<span id="spinner-deporte" class="htmx-indicator">Guardando...</span>
-			</form>
-		</div>
+	@DeportesGrid(deportes)
+
+	<details class="admin-box">
+		<summary>➕ Agregar nuevo deporte al catálogo</summary>
+		@DeporteForm(false)
+	</details>
+}
+
+templ DeportesPage(deportes []sqlc.Deporte) {
+	@Layout("Elegir Deporte") {
+		@DeportesPartial(deportes)
 	}
 }

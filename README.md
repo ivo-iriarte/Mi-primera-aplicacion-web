@@ -61,9 +61,9 @@ La interacción se resuelve mediante el intercambio de **fragmentos HTML hiperme
 
 * **Navegación sin recarga (`hx-boost` y `hx-get`):** El menú de navegación y los enlaces entre deportes, canchas y reservas interceptan los clics y reemplazan únicamente el contenedor principal (`#main-content`), actualizando el historial del navegador mediante `hx-push-url="true"`.
 * **Alta reactiva de deportes (`hx-post`):** Al registrar una nueva disciplina en `/app/deportes/crear`, el servidor responde únicamente con el componente parcial `DeportesGrid` actualizado (`hx-target="#lista-deportes"`), reseteando el formulario sin refrescar la vista.
-* **Gestión dinámica de reservas (`hx-post`, `hx-swap` y `hx-confirm`):**
+* **Gestión dinámica de reservas (`hx-post`, `hx-delete`, `hx-swap` y `hx-confirm`):**
   * Al confirmar un turno en `/app/reservas/crear`, se actualiza únicamente el componente `ReservasTabla` (`#contenedor-tabla-reservas`) y se muestran validaciones de fechas sin perder los datos ingresados.
-  * Al cancelar un turno en `/app/reservas/cancelar`, se solicita confirmación (`hx-confirm`) y se elimina la fila específica de la tabla (`hx-target="closest tr"`, `hx-swap="outerHTML swap:0.3s"`) con una transición suave.
+  * Al cancelar un turno mediante `DELETE /app/reservas/{id}` (`hx-delete`), se solicita confirmación (`hx-confirm`) y se elimina la fila específica de la tabla (`hx-target="closest tr"`, `hx-swap="outerHTML"`).
 * **Notificaciones Out-of-Band (`hx-swap-oob`):** El componente `FlashMessage` inyecta alertas visuales de éxito o error en `#toast-container` de forma paralela a la actualización principal del DOM.
 * **Degradación elegante (*Progressive Enhancement*):** Todos los handlers inspeccionan el encabezado HTTP `HX-Request: true`. Si la petición proviene de HTMX, devuelven fragmentos parciales; si se accede de forma tradicional sin HTMX, responden con páginas completas o redirecciones estándar (`303 See Other`).
 
@@ -98,7 +98,8 @@ El sistema mantiene una arquitectura desacoplada en tres capas (*Three-Tier*), c
 * `GET /app/deportes/{id}/canchas` → Lista las canchas del deporte seleccionado (devuelve `CanchasPartial` en peticiones HTMX).
 * `GET /app/reservas` → Panel de reservas con formulario (soporta preselección de cancha vía `?id_cancha=X`) y listado de turnos.
 * `POST /app/reservas/crear` → Registra una nueva reserva (devuelve fragmento `ReservasTabla` + notificación OOB en peticiones HTMX).
-* `POST /app/reservas/cancelar` → Elimina una reserva existente (elimina la fila `<tr>` del DOM y envía notificación OOB en peticiones HTMX).
+* `DELETE /app/reservas/{id}` → Elimina una reserva existente mediante HTMX (`hx-delete`), removiendo la fila `<tr>` del DOM y enviando notificación OOB.
+* `POST /app/reservas/cancelar` → Alternativa clásica sin HTMX para cancelar una reserva con redirección.
 
 ### API REST
 * `GET /deportes` → Retorna el listado de deportes en formato JSON.

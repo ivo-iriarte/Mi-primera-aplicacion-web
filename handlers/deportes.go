@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
 	sqlc "canchapp/db/sqlc"
+	"canchapp/logic"
 )
 
 type DeportesHandler struct {
@@ -61,11 +64,21 @@ func (h *DeportesHandler) Deporte(w http.ResponseWriter, r *http.Request) {
 //-----------------------------------obtener todos los deportes-------------------------------------------------
 
 func (h *DeportesHandler) getDeportes(w http.ResponseWriter, r *http.Request) {
-
-	deportes, err := h.queries.ListDeportes(r.Context())
+	var (
+		deportes []sqlc.Deporte
+		err      error
+	)
+	if r.URL.Query().Get("activos") == "true" {
+		deportes, err = h.queries.ListDeportesActivos(r.Context())
+	} else {
+		deportes, err = h.queries.ListDeportes(r.Context())
+	}
 	if err != nil {
 		http.Error(w, "Error al obtener deportes", http.StatusInternalServerError)
 		return
+	}
+	if deportes == nil {
+		deportes = []sqlc.Deporte{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -85,12 +98,12 @@ func (h *DeportesHandler) crearDeporte(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// nos fijamos que el nombre no sea vacio (quiza deberiamos chequear que sea un deporte de verdad cargando un catalogo de deportes o asi, o quiza en restricciones de dominio de la BD)
-	if req.Nombre == "" {
-		http.Error(w, "El nombre esta vacio", http.StatusBadRequest)
+	if err := logic.ValidateDeporte(req.Nombre); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	// si pasa los errores llamamos a sqlc
-	deporte, err := h.queries.CreateDeporte(r.Context(), req.Nombre)
+	deporte, err := h.queries.CreateDeporte(r.Context(), strings.TrimSpace(req.Nombre))
 	if err != nil {
 		http.Error(w, "Error al crear deporte: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -126,8 +139,8 @@ func (h *DeportesHandler) updateDeporte(w http.ResponseWriter, r *http.Request, 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if req.Nombre == "" {
-		http.Error(w, "El deporte no tiene nombre", http.StatusBadRequest)
+	if err := logic.ValidateDeporte(req.Nombre); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -138,14 +151,16 @@ func (h *DeportesHandler) updateDeporte(w http.ResponseWriter, r *http.Request, 
 	//esto de la linea 147 a la 155 es el equivalente a la modificacion que hace el alejandro en la filmina con la diferencia de que usamos la conexion con la BD y el usaba un slice
 	//osea aca manejamos una conexion real por lo tanto usamos las funciones de SQLC
 
-	//no sabemos si esta bien que el error que tire sea el 500 y no el 404 pero lo dehjamos asi como lo hizo el profe
-
 	deporte, err := h.queries.UpdateDeporte(r.Context(), sqlc.UpdateDeporteParams{
 		IDDeporte: int32(id),
-		Nombre:    req.Nombre,
+		Nombre:    strings.TrimSpace(req.Nombre),
 		Activo:    req.Activo,
 	})
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "No se encontro el deporte", http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -1,109 +1,180 @@
 package views
 
-import (
-	sqlc "canchapp/db/sqlc"
-	"fmt"
-)
+import "fmt"
 
-templ ReservasTabla(reservas []sqlc.Reserva) {
-	<div id="contenedor-tabla-reservas">
-		if len(reservas) == 0 {
-			<p style="margin-top: 1rem; color: #64748b;">No hay reservas registradas en el sistema.</p>
-		} else {
-			<table>
-				<thead>
-					<tr>
-						<th>ID</th>
-						<th>Cancha</th>
-						<th>Usuario</th>
-						<th>Fecha y Hora</th>
-						<th>Total</th>
-						<th>Acción</th>
-					</tr>
-				</thead>
-				<tbody>
-					for _, r := range reservas {
-						<tr id={ fmt.Sprintf("reserva-%d", r.IDReserva) }>
-							<td>#{ fmt.Sprintf("%d", r.IDReserva) }</td>
-							<td>Cancha #{ fmt.Sprintf("%d", r.IDCancha) }</td>
-							<td>User #{ fmt.Sprintf("%d", r.IDUsuario) }</td>
-							<td>{ r.FechaInicio.Format("02/01/2006 15:04") }</td>
-							<td>${ r.PrecioTotal }</td>
-							<td>
-								<button
-									type="button"
-									class="btn-danger"
-									style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
-									hx-post="/app/reservas/cancelar"
-									hx-vals={ fmt.Sprintf(`{"id_reserva": "%d"}`, r.IDReserva) }
-									hx-target="closest tr"
-									hx-swap="outerHTML swap:0.3s"
-									hx-confirm="¿Seguro que deseás cancelar este turno?"
-								>
-									Cancelar
-								</button>
-							</td>
-						</tr>
-					}
-				</tbody>
-			</table>
-		}
-	</div>
+func buildReservasURL(filtro string, idUsuario int32) string {
+	if idUsuario > 0 {
+		return fmt.Sprintf("/app/reservas?filtro=%s&id_usuario=%d", filtro, idUsuario)
+	}
+	return fmt.Sprintf("/app/reservas?filtro=%s", filtro)
 }
 
-templ ReservasPage(reservas []sqlc.Reserva, canchas []sqlc.ListCanchasRow, usuarios []sqlc.Usuario, idCanchaPreseleccionada int32) {
-	@Layout("Mis Reservas") {
-		<div class="card">
-			<h2>Reservar Turno</h2>
-			<form
-				action="/app/reservas/crear"
-				method="POST"
-				hx-post="/app/reservas/crear"
-				hx-target="#contenedor-tabla-reservas"
-				hx-swap="outerHTML"
-				hx-indicator="#spinner-reserva"
-				style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;"
-			>
+templ MisReservasSection(vm MisReservasView) {
+	<section id="contenedor-mis-reservas">
+		<div class="card" style="padding-bottom: 1rem;">
+			<div class="section-header" style="margin-bottom: 0.75rem;">
 				<div>
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Usuario:</label>
-					<select name="id_usuario" required style="width: 100%;">
-						for _, u := range usuarios {
-							<option value={ fmt.Sprintf("%d", u.IDUsuario) }>{ u.Nombre } { u.Apellido } ({ u.Email })</option>
-						}
-					</select>
+					<h1 style="font-size: 1.45rem; font-weight: 800;">Mis Reservas</h1>
+					<p style="font-size: 0.9rem; color: var(--text-muted);">Consultá tus próximos turnos o cancelá una reserva para liberar el horario.</p>
 				</div>
-				<div>
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Cancha:</label>
-					<select name="id_cancha" required style="width: 100%;">
-						for _, c := range canchas {
-							<option value={ fmt.Sprintf("%d", c.IDCancha) } selected?={ c.IDCancha == idCanchaPreseleccionada }>
-								{ c.Nombre } (${ c.Precio })
+				<a
+					class="btn-primary"
+					href="/app"
+					hx-get="/app"
+					hx-target="#main-content"
+					hx-swap="innerHTML"
+					hx-push-url="true"
+				>
+					+ Nueva reserva
+				</a>
+			</div>
+
+			<form
+				action="/app/reservas"
+				method="GET"
+				hx-get="/app/reservas"
+				hx-target="#contenedor-mis-reservas"
+				hx-swap="outerHTML"
+				hx-push-url="true"
+				style="display: flex; gap: 0.6rem; align-items: end; flex-wrap: wrap; margin-bottom: 0.75rem;"
+			>
+				<input type="hidden" name="filtro" value={ vm.Filtro }/>
+				<div style="min-width: 240px; flex: 1;">
+					<label class="field-label" for="filtro-usuario">Filtrar por usuario:</label>
+					<select id="filtro-usuario" name="id_usuario">
+						<option value="0" selected?={ vm.IDUsuario == 0 }>Todos los usuarios</option>
+						for _, u := range vm.Usuarios {
+							<option value={ fmt.Sprintf("%d", u.IDUsuario) } selected?={ u.IDUsuario == vm.IDUsuario }>
+								{ u.Nombre } { u.Apellido } ({ u.Email })
 							</option>
 						}
 					</select>
 				</div>
-				<div>
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Inicio:</label>
-					<input type="datetime-local" name="fecha_inicio" required style="width: 100%;"/>
-				</div>
-				<div>
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Fin:</label>
-					<input type="datetime-local" name="fecha_fin" required style="width: 100%;"/>
-				</div>
-				<div style="grid-column: 1 / -1;">
-					<label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Observaciones:</label>
-					<input type="text" name="observaciones" placeholder="Opcional: Requerimientos extra" style="width: 100%;"/>
-				</div>
-				<div style="grid-column: 1 / -1; margin-top: 0.5rem;">
-					<button type="submit" style="width: 100%;">Confirmar Reserva</button>
-					<span id="spinner-reserva" class="htmx-indicator" style="margin-top: 0.5rem;">Procesando reserva...</span>
-				</div>
+				<button type="submit" class="btn-secondary">Aplicar filtro</button>
 			</form>
+
+			<div class="tabs-bar" style="margin-bottom: 0;">
+				<a
+					class={ "tab-link", templ.KV("tab-link-active", vm.Filtro != "historial") }
+					href={ templ.SafeURL(buildReservasURL("activas", vm.IDUsuario)) }
+					hx-get={ buildReservasURL("activas", vm.IDUsuario) }
+					hx-target="#contenedor-mis-reservas"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+				>
+					{ fmt.Sprintf("Activas (%d)", vm.CantActivas) }
+				</a>
+				<a
+					class={ "tab-link", templ.KV("tab-link-active", vm.Filtro == "historial") }
+					href={ templ.SafeURL(buildReservasURL("historial", vm.IDUsuario)) }
+					hx-get={ buildReservasURL("historial", vm.IDUsuario) }
+					hx-target="#contenedor-mis-reservas"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+				>
+					{ fmt.Sprintf("Historial / Canceladas (%d)", vm.CantHistorial) }
+				</a>
+			</div>
 		</div>
 
-		<div class="card">
-			<h2>Turnos Reservados</h2>
-			@ReservasTabla(reservas)
-		</div>
+		if len(vm.Reservas) == 0 {
+			<div class="card" style="text-align: center; padding: 2rem 1.5rem;">
+				if vm.Filtro == "historial" {
+					<p style="color: var(--text-muted);">No hay reservas canceladas en el historial.</p>
+				} else {
+					<p style="color: var(--text-muted); margin-bottom: 1rem;">No tenés reservas activas en este momento.</p>
+					<a
+						class="btn-primary"
+						href="/app"
+						hx-get="/app"
+						hx-target="#main-content"
+						hx-swap="innerHTML"
+						hx-push-url="true"
+					>
+						Elegir deporte para reservar
+					</a>
+				}
+			</div>
+		} else {
+			<div id="lista-reservas" class="list-stack">
+				for _, r := range vm.Reservas {
+					<article
+						id={ fmt.Sprintf("reserva-%d", r.IDReserva) }
+						data-reserva-id={ fmt.Sprintf("%d", r.IDReserva) }
+						class="cancha-card"
+					>
+						<div class="cancha-top">
+							<div style="display: flex; gap: 0.9rem; align-items: flex-start;">
+								<div class="inst-avatar">{ IconoDeporte(r.DeporteNombre) }</div>
+								<div>
+									<h2 style="font-size: 1.15rem; font-weight: 800;">{ r.CanchaNombre }</h2>
+									<div style="font-size: 0.92rem; color: var(--text-muted); margin-top: 0.1rem;">
+										{ r.InstitucionNombre } · { r.DeporteNombre }
+									</div>
+									<div style="display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0.55rem; font-size: 0.9rem;">
+										<span>📅 <strong>{ r.FechaInicio.UTC().Format("02/01/2006") }</strong></span>
+										<span>🕒 <strong>{ r.FechaInicio.UTC().Format("15:04") } - { r.FechaFin.UTC().Format("15:04") }</strong></span>
+										<span>👤 { r.UsuarioNombre } { r.UsuarioApellido }</span>
+									</div>
+									if r.Observaciones.Valid && r.Observaciones.String != "" {
+										<div style="margin-top: 0.4rem; font-size: 0.85rem; color: var(--text-muted);">
+											💬 { r.Observaciones.String }
+										</div>
+									}
+								</div>
+							</div>
+							if r.EstadoNombre == "Cancelada" {
+								<span class="pill pill-cancelled">{ r.EstadoNombre }</span>
+							} else {
+								<span class="pill pill-success">{ r.EstadoNombre }</span>
+							}
+						</div>
+
+						<div class="cancha-footer">
+							<div>
+								<span style="font-size: 0.82rem; color: var(--text-muted);">Total del turno</span>
+								<div style="font-size: 1.2rem; font-weight: 800;">${ r.PrecioTotal }</div>
+							</div>
+
+							<div style="display: flex; gap: 0.5rem; align-items: center;">
+								<a
+									class="btn-primary btn-secondary"
+									style="padding: 0.5rem 0.95rem; font-size: 0.85rem;"
+									href={ templ.SafeURL(fmt.Sprintf("/app/canchas/%d?fecha=%s", r.IDCancha, r.FechaInicio.UTC().Format("2006-01-02"))) }
+									hx-get={ fmt.Sprintf("/app/canchas/%d?fecha=%s", r.IDCancha, r.FechaInicio.UTC().Format("2006-01-02")) }
+									hx-target="#main-content"
+									hx-swap="innerHTML"
+									hx-push-url="true"
+								>
+									Ver cancha
+								</a>
+								if r.EstadoNombre != "Cancelada" {
+									<form
+										action="/app/reservas/cancelar"
+										method="POST"
+										hx-post="/app/reservas/cancelar"
+										hx-target="#contenedor-mis-reservas"
+										hx-swap="outerHTML"
+										hx-confirm="¿Seguro que deseás cancelar este turno? El horario volverá a quedar disponible."
+										style="margin: 0;"
+									>
+										<input type="hidden" name="id_reserva" value={ fmt.Sprintf("%d", r.IDReserva) }/>
+										<input type="hidden" name="filtro" value={ vm.Filtro }/>
+										<input type="hidden" name="id_usuario" value={ fmt.Sprintf("%d", vm.IDUsuario) }/>
+										<button type="submit" class="btn-outline-danger">Cancelar</button>
+									</form>
+								}
+							</div>
+						</div>
+					</article>
+				}
+			</div>
+		}
+	</section>
+}
+
+templ ReservasPage(vm MisReservasView) {
+	@Layout("Mis Reservas") {
+		@MisReservasSection(vm)
 	}
 }

@@ -1,0 +1,214 @@
+package views
+
+import (
+	sqlc "canchapp/db/sqlc"
+	"fmt"
+)
+
+templ InstitucionesPorDeportePartial(deporte sqlc.Deporte, instituciones []sqlc.Institucion) {
+	<a
+		class="back-link"
+		href="/app"
+		hx-get="/app"
+		hx-target="#main-content"
+		hx-swap="innerHTML"
+		hx-push-url="true"
+	>
+		← Volver a deportes
+	</a>
+
+	<section class="hero-card">
+		<div>
+			<div class="hero-greeting">Deporte seleccionado</div>
+			<h1 class="hero-title">{ IconoDeporte(deporte.Nombre) } { deporte.Nombre }</h1>
+			<p class="hero-subtitle">
+				if len(instituciones) == 1 {
+					1 institución disponible para este deporte
+				} else {
+					{ fmt.Sprintf("%d instituciones disponibles para este deporte", len(instituciones)) }
+				}
+			</p>
+		</div>
+	</section>
+
+	if len(instituciones) == 0 {
+		<div class="card">
+			<p style="color: var(--text-muted);">Todavía no hay instituciones con canchas activas registradas para { deporte.Nombre }.</p>
+		</div>
+	} else {
+		<div class="list-stack">
+			for _, inst := range instituciones {
+				<a
+					class="inst-card"
+					data-institucion-id={ fmt.Sprintf("%d", inst.IDInstitucion) }
+					href={ templ.SafeURL(fmt.Sprintf("/app/instituciones/%d?id_deporte=%d", inst.IDInstitucion, deporte.IDDeporte)) }
+					hx-get={ fmt.Sprintf("/app/instituciones/%d?id_deporte=%d", inst.IDInstitucion, deporte.IDDeporte) }
+					hx-target="#main-content"
+					hx-swap="innerHTML"
+					hx-push-url="true"
+				>
+					<div style="display: flex; align-items: center; gap: 1rem;">
+						<div class="inst-avatar">🏟️</div>
+						<div>
+							<h2 style="font-size: 1.15rem; font-weight: 700;">{ inst.Nombre }</h2>
+							<p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.15rem;">
+								📍 { inst.Direccion }, { inst.Ciudad } ({ inst.Provincia }) · 📞 { inst.Telefono }
+							</p>
+							if inst.Descripcion != "" {
+								<p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
+									{ inst.Descripcion }
+								</p>
+							}
+							<div style="margin-top: 0.55rem;">
+								<span class="pill">{ IconoDeporte(deporte.Nombre) } { deporte.Nombre }</span>
+							</div>
+						</div>
+					</div>
+					<span class="pill" style="flex-shrink: 0;">Ver canchas →</span>
+				</a>
+			}
+		</div>
+	}
+}
+
+templ InstitucionesPorDeportePage(deporte sqlc.Deporte, instituciones []sqlc.Institucion) {
+	@Layout("Instituciones de " + deporte.Nombre) {
+		@InstitucionesPorDeportePartial(deporte, instituciones)
+	}
+}
+
+templ CanchasInstitucionSection(institucion sqlc.Institucion, deportesClub []sqlc.Deporte, idDeporteFiltro int32, canchas []CanchaCardView) {
+	<section id="seccion-canchas-institucion">
+		if len(deportesClub) > 0 {
+			<h3 style="font-size: 1rem; font-weight: 700;">Deportes disponibles en el club</h3>
+			<div class="filter-pills">
+				<a
+					class={ "pill", templ.KV("pill-active", idDeporteFiltro == 0), templ.KV("pill-muted", idDeporteFiltro != 0) }
+					href={ templ.SafeURL(fmt.Sprintf("/app/instituciones/%d", institucion.IDInstitucion)) }
+					hx-get={ fmt.Sprintf("/app/instituciones/%d", institucion.IDInstitucion) }
+					hx-target="#seccion-canchas-institucion"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+				>
+					Todos
+				</a>
+				for _, d := range deportesClub {
+					<a
+						class={ "pill", templ.KV("pill-active", idDeporteFiltro == d.IDDeporte), templ.KV("pill-muted", idDeporteFiltro != d.IDDeporte) }
+						href={ templ.SafeURL(fmt.Sprintf("/app/instituciones/%d?id_deporte=%d", institucion.IDInstitucion, d.IDDeporte)) }
+						hx-get={ fmt.Sprintf("/app/instituciones/%d?id_deporte=%d", institucion.IDInstitucion, d.IDDeporte) }
+						hx-target="#seccion-canchas-institucion"
+						hx-swap="outerHTML"
+						hx-push-url="true"
+					>
+						{ IconoDeporte(d.Nombre) } { d.Nombre }
+					</a>
+				}
+			</div>
+		}
+
+		<div class="section-header">
+			<h2 style="font-size: 1.2rem; font-weight: 800;">Canchas disponibles</h2>
+			<span style="font-size: 0.88rem; color: var(--text-muted);">{ fmt.Sprintf("%d encontradas", len(canchas)) }</span>
+		</div>
+
+		if len(canchas) == 0 {
+			<div class="card">
+				<p style="color: var(--text-muted);">No hay canchas disponibles con el filtro seleccionado.</p>
+			</div>
+		} else {
+			<div class="list-stack">
+				for _, c := range canchas {
+					<article class="cancha-card" data-cancha-id={ fmt.Sprintf("%d", c.IDCancha) } data-precio={ c.Precio }>
+						<div class="cancha-top">
+							<div>
+								<h3 style="font-size: 1.15rem; font-weight: 800;">{ c.Nombre }</h3>
+								<div style="display: flex; gap: 0.45rem; flex-wrap: wrap; margin-top: 0.35rem;">
+									<span class="pill">{ IconoDeporte(c.DeporteNombre) } { c.DeporteNombre }</span>
+									<span class="pill pill-muted">🕒 { FormatearHoraCorta(c.HoraApertura) } a { FormatearHoraCorta(c.HoraCierre) }</span>
+								</div>
+							</div>
+							<div class="price-tag">
+								<div class="price-amount">${ c.Precio }</div>
+								<div class="price-unit">{ fmt.Sprintf("por turno de %d min", c.DuracionTurnoMinutos) }</div>
+							</div>
+						</div>
+
+						if len(c.Servicios) > 0 {
+							<div class="services-row">
+								for _, s := range c.Servicios {
+									<span class="pill pill-muted">{ IconoServicio(s.Servicio) } { s.Servicio }</span>
+								}
+							</div>
+						}
+
+						<div class="cancha-footer">
+							<span style="font-size: 0.86rem; color: var(--text-muted);">Seleccioná esta cancha para elegir fecha y horario</span>
+							<a
+								class="btn-primary"
+								href={ templ.SafeURL(fmt.Sprintf("/app/canchas/%d", c.IDCancha)) }
+								hx-get={ fmt.Sprintf("/app/canchas/%d", c.IDCancha) }
+								hx-target="#main-content"
+								hx-swap="innerHTML"
+								hx-push-url="true"
+							>
+								Ver disponibilidad →
+							</a>
+						</div>
+					</article>
+				}
+			</div>
+		}
+	</section>
+}
+
+templ InstitucionDetallePartial(institucion sqlc.Institucion, deportesClub []sqlc.Deporte, idDeporteFiltro int32, canchas []CanchaCardView) {
+	if idDeporteFiltro > 0 {
+		<a
+			class="back-link"
+			href={ templ.SafeURL(fmt.Sprintf("/app/deportes/%d", idDeporteFiltro)) }
+			hx-get={ fmt.Sprintf("/app/deportes/%d", idDeporteFiltro) }
+			hx-target="#main-content"
+			hx-swap="innerHTML"
+			hx-push-url="true"
+		>
+			← Volver a instituciones
+		</a>
+	} else {
+		<a
+			class="back-link"
+			href="/app"
+			hx-get="/app"
+			hx-target="#main-content"
+			hx-swap="innerHTML"
+			hx-push-url="true"
+		>
+			← Volver a deportes
+		</a>
+	}
+
+	<section class="card">
+		<div style="display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+			<div class="inst-avatar">🏟️</div>
+			<div style="flex: 1; min-width: 240px;">
+				<h1 style="font-size: 1.45rem; font-weight: 800;">{ institucion.Nombre }</h1>
+				if institucion.Descripcion != "" {
+					<p style="color: var(--text-muted); margin-top: 0.25rem; font-size: 0.95rem;">{ institucion.Descripcion }</p>
+				}
+				<div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.75rem; font-size: 0.9rem; color: var(--text);">
+					<span>📍 { institucion.Direccion }, { institucion.Ciudad }, { institucion.Provincia }</span>
+					<span>📞 { institucion.Telefono }</span>
+					<span>✉️ { institucion.Email }</span>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	@CanchasInstitucionSection(institucion, deportesClub, idDeporteFiltro, canchas)
+}
+
+templ InstitucionDetallePage(institucion sqlc.Institucion, deportesClub []sqlc.Deporte, idDeporteFiltro int32, canchas []CanchaCardView) {
+	@Layout(institucion.Nombre) {
+		@InstitucionDetallePartial(institucion, deportesClub, idDeporteFiltro, canchas)
+	}
+}

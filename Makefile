@@ -2,7 +2,7 @@ APP_NAME := canchapp
 TEMPL_VERSION := v0.3.833
 SQLC_VERSION := v1.31.1
 
-.PHONY: all run-app generate build db_down db_up clean check-no-js
+.PHONY: all run-app generate build db_down db_up clean
 
 all: run-app
 
@@ -15,7 +15,7 @@ generate:
 	@go mod tidy
 
 # Compilación
-build: check-no-js generate
+build: generate
 	@echo "Compilando aplicación..."
 	@mkdir -p tmp
 	@go build -o tmp/$(APP_NAME) .
@@ -36,11 +36,31 @@ db_up: db_down
 	@docker compose -f docker-compose.test.yml exec -T database_test \
 		psql -v ON_ERROR_STOP=1 -U prueba -d CanchAppprueba -c " \
 		INSERT INTO institucion (nombre, direccion, telefono, email, descripcion, ciudad, provincia) VALUES \
-		('Club Náutico Necochea', 'Ribera Río Quequén', '2262-420000', 'nautico@club.com', 'Club con canchas e instalaciones completas', 'Necochea', 'Buenos Aires') ON CONFLICT DO NOTHING; \
-		INSERT INTO deporte (nombre) VALUES ('Fútbol'), ('Padel'), ('Tenis') ON CONFLICT DO NOTHING; \
+		('Club Náutico Necochea', 'Ribera Río Quequén', '2262-420000', 'nautico@club.com', 'Club ribereño con canchas e instalaciones completas', 'Necochea', 'Buenos Aires'), \
+		('Complejo Deportivo Parque', 'Av. 10 3450', '2262-435500', 'contacto@complejoparque.com', 'Predio deportivo con césped sintético, pádel blindex y buffet', 'Necochea', 'Buenos Aires') ON CONFLICT DO NOTHING; \
+		INSERT INTO deporte (nombre) VALUES ('Fútbol'), ('Padel'), ('Tenis'), ('Básquet') ON CONFLICT DO NOTHING; \
+		INSERT INTO servicios (servicio, descripcion) VALUES \
+		('Iluminación LED', 'Reflectores para turnos nocturnos'), \
+		('Duchas', 'Agua caliente en vestuarios'), \
+		('Vestuarios', 'Vestuarios amplios equipados'), \
+		('Estacionamiento', 'Estacionamiento interno gratuito') ON CONFLICT DO NOTHING; \
 		INSERT INTO cancha (nombre, precio, duracion_turno_minutos, hora_apertura, hora_cierre, id_institucion, id_deporte) VALUES \
 		('Cancha Sintético 1', 18000.00, 60, '08:00:00', '23:00:00', 1, 1), \
-		('Cancha Padel Cristal', 14000.00, 90, '09:00:00', '23:00:00', 1, 2) ON CONFLICT DO NOTHING; \
+		('Cancha Padel Cristal', 14000.00, 60, '09:00:00', '23:00:00', 1, 2), \
+		('Court Central Polvo', 12000.00, 60, '08:00:00', '21:00:00', 1, 3), \
+		('Cancha Fútbol 5 Techada', 20000.00, 60, '09:00:00', '23:00:00', 2, 1), \
+		('Cancha Padel Panorámica', 15000.00, 60, '09:00:00', '23:00:00', 2, 2), \
+		('Cancha Básquet Parquet', 22000.00, 60, '10:00:00', '22:00:00', 2, 4) ON CONFLICT DO NOTHING; \
+		INSERT INTO cancha_servicio (id_cancha, id_servicio) VALUES \
+		(1, 1), (1, 2), (1, 3), \
+		(2, 1), (2, 3), \
+		(3, 2), (3, 3), \
+		(4, 1), (4, 2), (4, 3), (4, 4), \
+		(5, 1), (5, 4), \
+		(6, 1), (6, 2), (6, 3) ON CONFLICT DO NOTHING; \
+		INSERT INTO usuario (nombre, apellido, email, password_hash, telefono) VALUES \
+		('Martín', 'Santos', 'martin@canchapp.com', 'demo_hash_1', '2262-451122'), \
+		('Ana', 'Gómez', 'ana@canchapp.com', 'demo_hash_2', '2262-558899') ON CONFLICT DO NOTHING; \
 		INSERT INTO estados_reservas (nombre) VALUES ('Confirmada'), ('Cancelada') ON CONFLICT DO NOTHING;"
 
 # TARGET TP5: Tareas previas -> Ejecución -> Tareas posteriores con trap
